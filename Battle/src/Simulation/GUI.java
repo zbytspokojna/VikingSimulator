@@ -83,7 +83,7 @@ public class GUI extends JFrame {
                 pauseButton.addActionListener(new ActionListener() {
                     @Override
                     public void actionPerformed(ActionEvent actionEvent) {
-                        if (simulator.getState() == false){
+                        if (!simulator.getState()){
                             simulator.setState(true);
                             pauseButton.setText("Stop");
                         }

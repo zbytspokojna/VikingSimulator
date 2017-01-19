@@ -10,6 +10,7 @@ public class Simulator extends JPanel {
     private Stats stats;
     private int rows, cols;
     private boolean state;
+    private int queue;
 
     public Simulator(int rows, int cols, int seeds){
         this.rows = rows;
@@ -18,15 +19,22 @@ public class Simulator extends JPanel {
         this.simulator = new JPanel();
         this.generator = new Generator(rows,cols,seeds);
         this.stats = new Stats(generator);
+        this.queue = 0;
     }
 
     public void simulation(){
         if (state) {
-            generator.getVikings().action();
-
-            //!!!!!!!!!!HERE PUT WHAT YOU WANT TO SIMULATE!!!!!!!!!!!!!!//
-
-            stats.estimate();
+            if (queue == 0) {
+                generator.getVikings().action();
+                generator.getVillagers().action();
+                queue = 1;
+            }
+            else {
+                generator.getVillagers().action();
+                generator.getVikings().action();
+                queue = 0;
+            }
+                stats.estimate();
         }
     }
 

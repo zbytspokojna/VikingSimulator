@@ -142,17 +142,10 @@ public class SquadVillagers {
 
         // Else figth
         state = 1;
-        return;
     }
 
 
     public void action() {                                  //toDo action functions
-    }
-
-    public void celebrate() {
-    }
-
-    public void surrender() {
     }
 
     // Updates

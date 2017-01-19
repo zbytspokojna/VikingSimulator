@@ -28,7 +28,6 @@ public class Building  {
 
     public void addLoot (int loot) {
         this.loot += loot;
-        return;
     }
 
     public void draw(Graphics g) {

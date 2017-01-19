@@ -46,9 +46,9 @@ public class Village {
         }
 
         // Generating center
-        for (int i = 0; i < buildings.size(); i ++){
-            center.x += buildings.get(i).getLocation().x + size/2;
-            center.y += buildings.get(i).getLocation().y + size/2;
+        for (Building building : buildings) {
+            center.x += building.getLocation().x + size / 2;
+            center.y += building.getLocation().y + size / 2;
         }
         center.x = center.x/buildings.size();
         center.y = center.y/buildings.size();

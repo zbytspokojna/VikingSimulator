@@ -1,6 +1,7 @@
 package Army;
 
 import Map.*;
+import Schemes.States;
 
 import java.awt.*;
 import java.util.ArrayList;
@@ -17,7 +18,7 @@ public class Villagers {
     public Villagers(Terrain map, Village village){
         // Initializing
         this.squads = new ArrayList<>();
-        this.state = 2;
+        this.state = States.FIGHT;
 
         this.village = village;
         this.map = map;
@@ -55,7 +56,7 @@ public class Villagers {
             if (i.getLoot() == 0) looted ++;
         }
         if (lost == squads.size() || looted == village.getBuildings().size()) {
-            state = 0;
+            state = States.LOSS;
             return;
         }
 
@@ -64,19 +65,19 @@ public class Villagers {
             if (i.getState() == 0 || i.getState() == 2) defeated ++;
         }
         if (defeated == enemies.size()) {
-            state = 1;
+            state = States.WIN;
             return;
         }
 
         // Else figth
-        state = 2;
-        return;
+        state = States.FIGHT;
     }
 
     // Actions based on state
     public void action(){
+        estimateState();
         for (SquadVillagers i : squads) {
-            if (state == 2) i.action();
+            if (state == States.FIGHT) i.action();
         }
     }
 

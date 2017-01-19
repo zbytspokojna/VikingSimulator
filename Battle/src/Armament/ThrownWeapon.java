@@ -1,8 +1,5 @@
 package Armament;
 
-import Schemes.Colors;
-
-import java.awt.*;
 
 /**
  * Created by anka on 03.01.17.
