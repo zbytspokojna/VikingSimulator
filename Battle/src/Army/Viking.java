@@ -12,7 +12,7 @@ import java.util.ArrayList;
 import java.util.Random;
 
 import static Colision.Distance.distanceC;
-import static Colision.Direction.direction;
+import static Colision.Direction.*;
 import static Colision.Moving.*;
 import static java.lang.Math.*;
 
@@ -20,11 +20,12 @@ public class Viking {
     // Stats for battle
     private int health;
     private double moral;
-    private int moralThreshold;
+    private double moralThreshold;
     private int defense;
     private int accuracy;
     private int dodge;
     private int loot;
+    private int maxLoot;
     private int state;
     private boolean inBoat;
     private int targeted;
@@ -45,6 +46,7 @@ public class Viking {
     private ArrayList<ThrownWeapon> thrownWeapons;
     private Shield shield;
     private int shieldDirection;
+    private int shieldAtBack;
 
     // Drawing
     private int size;
@@ -54,13 +56,14 @@ public class Viking {
     private Terrain map;
     private Village village;
     private Fleet fleet;
+    private Building base;
 
     // Other agents
     private ArrayList<SquadVikings> allies;
     private ArrayList<SquadVillagers> enemies;
 
     // CONSTRUCTOR
-    public Viking(Point location, Terrain map, Village village, Fleet fleet, Building targetBuilding, Color color, int size, ArrayList<SquadVikings> allies) {
+    public Viking(Point location, Terrain map, Village village, Fleet fleet, Building targetBuilding, Building base, Color color, int size, ArrayList<SquadVikings> allies) {
         Random r = new Random();
         // Stats for battle
         this.health = 100;
@@ -70,6 +73,7 @@ public class Viking {
         this.accuracy = r.nextInt(31) + 30;
         this.dodge = r.nextInt(21) + 10;
         this.loot = 0;
+        this.maxLoot = 1;
         this.state = States.FIGHT;
         this.inBoat = false;
         this.targeted = 0;
@@ -89,6 +93,7 @@ public class Viking {
         if ( r.nextInt(101) > 50 ) this.shield = new Shield();
         else this.shield = null;
         this.shieldDirection = - (r.nextInt(61) + 30);
+        this.shieldAtBack = -180;
 
         // Drawing
         this.size = size;
@@ -98,6 +103,7 @@ public class Viking {
         this.map = map;
         this.village = village;
         this.fleet = fleet;
+        this.base = base;
 
         // Other agents
         this.allies = allies;
@@ -119,7 +125,8 @@ public class Viking {
         //  Setting currentTarget to boat
         this.currentTarget = targetBoat.getCurrentLocation();
 
-        vector();
+        vector = vector(currentLocation, currentTarget);
+        direction = direction(vector);
     }
 
 
@@ -132,9 +139,13 @@ public class Viking {
         this.targetBuilding = targetBuilding;
     }
 
+    public void setMaxLoot(int maxLoot){
+        this.maxLoot = maxLoot;
+    }
+
     // Changing states
     public boolean setLooting() {
-        if (state != States.DEAD && state != States.INBOAT && state != States.RETREAT) {
+        if (state != States.DEAD && state != States.RETREAT && !inBoat && loot < maxLoot ) {
             state = States.LOOTING;
             return true;
         }
@@ -142,15 +153,20 @@ public class Viking {
     }
 
     public void unsetLooting() {
-        if (state == States.LOOTING) state = States.FIGHT;
+        if (state == States.LOOTING)
+            state = States.FIGHT;
     }
 
     public void setLoss() {
-        if (state != States.DEAD && state != States.WAITING) state = States.LOSS;
+        if (state != States.DEAD && state != States.WAITING)
+            state = States.LOSS;
+        moral = 100;
     }
 
     public void setWin() {
-        if (state != States.DEAD && state != States.WAITING) state = States.WIN;
+        if (state != States.DEAD && state != States.WAITING)
+            state = States.WIN;
+        moral = 100;
     }
 
     public void setReAttack() {
@@ -161,11 +177,8 @@ public class Viking {
     }
 
     public void setFighting() {
-        if (state != States.DEAD && state != States.LOSS && state != States.WIN) state = States.FIGHT;
-    }
-
-    public void setComeBack() {
-        if (state != States.DEAD) state = States.WIN;
+        if (state != States.DEAD && state != States.LOSS && state != States.WIN && state != States.RETREAT)
+            state = States.FIGHT;
     }
 
     // Changing state of being targeted
@@ -203,12 +216,36 @@ public class Viking {
         return inBoat;
     }
 
+    public int getMaxLoot() {
+        return maxLoot;
+    }
+
+
     // OTHER FUNCTIONS
 
     // Moral
     public void updateMoral() {
-        // TODO: 14.01.17 make it based on situations and stuff
+        int ally = 0, enemy = 0, difference;
+        // count allies in area
+        if (!inBoat) {
+            for (SquadVikings i : allies)
+                for (Viking j : i.getVikings())
+                    if (j != this)
+                        if (distanceC(currentLocation.x, j.getCurrentLocation().x, currentLocation.y, j.getCurrentLocation().y) < 25  && j.getHealth() > 0)
+                            ally++;
+            // count enemies in ares
+            for (SquadVillagers i : enemies)
+                for (Villager j : i.getVillagers())
+                    if (distanceC(currentLocation.x, j.getCurrentLocation().x, currentLocation.y, j.getCurrentLocation().y) < 25 && j.getHealth() > 0)
+                        enemy++;
+            // update moral
+            difference = enemy - ally;
+            if (difference > 0) decreaseMoral((difference * difference) / 4);
+            else increaseMoral((difference * difference) / 4);
+            if (state == States.RETREAT) increaseMoral(0.025);
+        }
     }
+
     private boolean moralCheck(){
         updateMoral();
         return moral > moralThreshold;
@@ -229,12 +266,8 @@ public class Viking {
 
         switch (state){
             case States.LOOTING :
-                if (targetBuilding.getLoot() == 0 || loot == 2)
+                if (targetBuilding.getLoot() == 0 || loot == maxLoot)
                     state = States.FIGHT;
-                break;
-            case States.INBOAT :
-                if (map.getTerrainGrid()[currentLocation.x][currentLocation.y] != Colors.OCEAN)
-                    state = States.WAITING;
                 break;
             case States.WAITING:
                 break;
@@ -250,15 +283,17 @@ public class Viking {
             case States.FIGHT:
                 if (!moralCheck()) state = States.RETREAT;
                 break;
+            case States.IDLE:
+                if (targetEnemy != null ) state = States.FIGHT;
         }
     }
 
     public boolean onLand() {
         estimateState();
-        return (state == States.WAITING);
+        return (state == States.WAITING || state == States.DEAD);
     }
 
-    // Updating currentTarget based on state // TODO: 19.01.17  
+    // Updating currentTarget based on state
     private void updateCurrentTarget(){
         switch (state){
             case States.DEAD:
@@ -278,47 +313,43 @@ public class Viking {
             case States.LOOTING:
                 currentTarget = targetBuilding.getLocation();
                 break;
-            case States.INBOAT:
-                currentTarget = targetBoat.getTargetLocation();
-                break;
             case States.WAITING:
                 currentTarget = targetBuilding.getLocation();
                 break;
             case States.LOSS:
-                if (inBoat)
-                    currentTarget = targetBoat.getTargetLocation();
-                else if (map.getTerrainGrid()[currentLocation.x][currentLocation.y] == Colors.HILLS)
-                    currentTarget = new Point(900,900);
+                if (map.getTerrainGrid()[currentLocation.x][currentLocation.y] == Colors.HILLS)
+                    currentTarget = base.getLocation();
                 else
                     currentTarget = targetBoat.getCurrentLocation();
                 break;
             case States.WIN:
-                if (inBoat)
-                    currentTarget = targetBoat.getTargetLocation();
-                else if (map.getTerrainGrid()[currentLocation.x][currentLocation.y] == Colors.HILLS)
-                    currentTarget = new Point(900,900);
+                if (map.getTerrainGrid()[currentLocation.x][currentLocation.y] == Colors.HILLS)
+                    currentTarget = base.getLocation();
                 else
                     currentTarget = targetBoat.getCurrentLocation();
                 break;
         }
+        if (inBoat) currentTarget = targetBoat.getTargetLocation();
     }
 
     public void findTargetEnemy() {
         boolean found = false;
-        // If fighting
+        // If fighting find target
         if (state == States.FIGHT && (targetEnemy == null || targetEnemy.getHealth() == 0)) {
             if (targetEnemy != null && targetEnemy.getHealth() == 0) {
                 targetEnemy.unsetTargeted();
                 targetEnemy = null;
             }
             if (distanceC(currentLocation.x, targetBuilding.getLocation().x, currentLocation.y, targetBuilding.getLocation().y) < 200) {
+                double radius = sqrt((targetBuilding.getWidth()*targetBuilding.getWidth()) + targetBuilding.getHeight()*targetBuilding.getHeight());
                 for (SquadVillagers i : enemies) {
                     for (Villager j : i.getVillagers()) {
                         if (j.getHealth() > 0) {
-                            if (distanceC(targetBuilding.getLocation().x, j.getCurrentLocation().x, targetBuilding.getLocation().y, j.getCurrentLocation().y) < targetBuilding.getHeight() + 30) {
+                            if (distanceC(targetBuilding.getLocation().x, j.getCurrentLocation().x, targetBuilding.getLocation().y, j.getCurrentLocation().y) < radius) {
                                 if (j.getTargeted() < 2) {
                                     targetEnemy = j;
                                     j.setTargeted();
+                                    state = States.FIGHT;
                                     found = true;
                                 }
                             }
@@ -330,7 +361,7 @@ public class Viking {
             }
             return;
         }
-        // If not figthing
+        // If not figthing loose target
         if (state != States.FIGHT && targetEnemy != null){
             targetEnemy.unsetTargeted();
             targetEnemy = null;
@@ -352,11 +383,20 @@ public class Viking {
 
 
     public void action() {
+        // update target
         findTargetEnemy();
         updateCurrentTarget();
-        vector();
+
+        System.out.println(state + ":" + moral);
+        // update vectors
+        vector = vector(currentLocation, currentTarget);
+        direction = direction(vector);
+        double radius = sqrt((targetBuilding.getWidth()*targetBuilding.getWidth()) + targetBuilding.getHeight()*targetBuilding.getHeight())/2;
+
         // if dead
         if (state == States.DEAD){
+            if (loot != 0)
+                dropLoot();
             return;
         }
 
@@ -365,7 +405,6 @@ public class Viking {
             if (distanceFromTargetBoat() < targetBoat.getLength()*2) {
                 currentLocation.x = targetBoat.getCurrentLocation().x;
                 currentLocation.y = targetBoat.getCurrentLocation().y;
-                state = States.INBOAT;
                 inBoat = true;
                 return;
             }
@@ -375,10 +414,13 @@ public class Viking {
             }
         }
 
-        // if fighting
-        if (state == States.FIGHT){
+        // if fighting // TODO: 20.01.17 implement behaviour for bow
+        if (state == States.FIGHT && !inBoat){
             if (targetEnemy == null){
-                move();
+                if (distanceFromTargetBuilding() > radius)
+                    move();
+                else
+                    state = States.IDLE;
                 return;
             }
             else if (distanceFromTargetEnemy() <= size + primeWeapon.getRange()) {
@@ -391,9 +433,9 @@ public class Viking {
             }
         }
 
-        // if looting
+        // if looting // TODO: 20.01.17 when loot > max set to fight?
         if (state == States.LOOTING){
-            if (distanceFromTargetBuilding() <= targetBuilding.getHeight()/3 + size && loot < 2){
+            if (distanceFromTargetBuilding() <= targetBuilding.getHeight()/4  && loot < maxLoot){
                 loot += targetBuilding.removeLoot();
                 return;
             }
@@ -403,21 +445,39 @@ public class Viking {
             }
         }
 
-        if ( (state == States.LOSS || state == States.WIN || state == States.INBOAT) ){
+        if ( (state == States.LOSS || state == States.WIN || inBoat) && state != States.RETREAT ){
             if (currentLocation.x == targetBoat.getTargetLocation().x && currentLocation.y == targetBoat.getTargetLocation().y) {
                 exit();
                 return;
             }
             else {
-                if (!inBoat) move();
+                if (!inBoat)
+                    move();
                 return;
             }
         }
 
         if (state == States.WAITING){
-//            System.out.println("I am waiting");
+        }
+        if (state == States.IDLE){
+            if (targetBuilding.getLoot() != 0 && loot == maxLoot) changeTargetBuilding();
         }
     }
+
+    private void changeTargetBuilding() {
+        for (Building building : village.getBuildings()){
+            if (building != targetBuilding && building.getLoot() > 0 ){
+                targetBuilding = building;
+                state = States.FIGHT;
+            }
+        }
+    }
+
+    // TODO: 19.01.17 implement leaving loot on the floor
+    private void dropLoot() {
+        loot = 0;
+    }
+
     private void exit(){
         Random r = new Random();
         boolean generated = false, noColision;
@@ -425,64 +485,90 @@ public class Viking {
         // generating random point in radius of a boat
         while (!generated) {
             double angle = toRadians(random() * 360);
-            double radius = r.nextInt((targetBoat.getLength())) + targetBoat.getLength()/2;
+            double radius = r.nextInt((targetBoat.getLength()*2));
             location.x = currentLocation.x + (int) (radius * cos(angle));
             location.y = currentLocation.y + (int) (radius * sin(angle));
-            // if in bounds
-            if (location.x - (radius+size+1) > 0 && location.y - (radius+size+1) > 0 && location.x < map.numRows + (radius+size+1) && location.y < map.numCols + (radius+size+1)) {
-                // if on land
-                if (checkExit(location)) {
-                    // checking for vikings
-                    noColision = true;
-                    double spread = 1.1;
-                    for (SquadVikings j : this.allies) {
-                        for (Viking k : j.getVikings()) {
-                            double distance = distanceC(location.x, k.getCurrentLocation().x, location.y, k.getCurrentLocation().y);
-                            if (distance < size * spread) {
-                                noColision = false;
-                            }
+            // if in bounds and on land
+            if (checkExit(location)) {
+                // checking for vikings
+                noColision = true;
+                double spread = 1.1;
+                for (SquadVikings j : this.allies) {
+                    for (Viking k : j.getVikings()) {
+                        double distance = distanceC(location.x, k.getCurrentLocation().x, location.y, k.getCurrentLocation().y);
+                        if (distance < size * spread) {
+                            noColision = false;
                         }
                     }
-                    if (noColision) {
-                        currentLocation.x = location.x;
-                        currentLocation.y = location.y;
-                        inBoat = false;
-                        state = States.WAITING;
-                        generated = true;
-                    }
+                }
+                if (noColision) {
+                    currentLocation.x = location.x;
+                    currentLocation.y = location.y;
+                    inBoat = false;
+                    state = States.WAITING;
+                    generated = true;
                 }
             }
         }
     }
 
-    private boolean checkExit(Point location){
+    private boolean checkExit(Point toCheck){
+        if(toCheck.x < size || toCheck.y < size || toCheck.x > map.numRows - size || toCheck.y > map.numCols - size)
+            return false;
+        Point location;
         double angle2 = 0;
         while (angle2 < 6.3) {
-            if (map.getTerrainGrid()[location.x + (int) (size/2 * cos(angle2))][location.y + (int) (size/2 * sin(angle2))] == Colors.OCEAN) {
-                return false;
-            }
+            location = new Point(toCheck);
+            location.x += (int) (size * cos(angle2));
+            location.y += (int) (size * sin(angle2));
+            if(location.x > 0 && location.y > 0 && location.x < map.numRows && location.y < map.numCols)
+                if (map.getTerrainGrid()[location.x ][location.y] == Colors.OCEAN)
+                    return false;
             angle2 += 0.3;
         }
         return true;
     }
 
-    // TODO: 19.01.17  implement moral increase for viking and his friends in a certain radius if enemy is hit
     private void attack() {
         Random r = new Random();
-        if (r.nextInt(101) < accuracy + primeWeapon.getAccuracy()){
-            if (r.nextInt(101) >= targetEnemy.getDodge())
-                targetEnemy.damage(r.nextInt(6) + 1 + primeWeapon.getDamage(), primeWeapon.getPenetration());
+        if (r.nextInt(101) <= accuracy + primeWeapon.getAccuracy()){
+            if (r.nextInt(101) > targetEnemy.getDodge()) {
+                int damage = r.nextInt(5) + 1;
+                targetEnemy.damage(damage + primeWeapon.getDamage(), primeWeapon.getPenetration());
+                // if got a hit
+                moral += damage/30;
+                for (SquadVikings squadVikings : allies)
+                    for (Viking viking : squadVikings.getVikings())
+                        if (viking != this)
+                            if (distanceC(currentLocation.x, viking.getCurrentLocation().x, currentLocation.y, viking.getCurrentLocation().y) <= 20)
+                                viking.increaseMoral(0.01);
+            }
         }
+        // If he missed
+        else moral -= 0.03;
     }
 
+    public void damage(int damage, int penetration) {
+        int def = defense;
+        if (shield != null ) def += shield.getDefense();
+        def = defense - penetration;
+        if (def < 0) def = 0;
+        if (def >= damage) return;
+        health -= (damage - def);
+        if (health < 0) health = 0;
+    }
+
+    public void increaseMoral(double increase) {
+        moral += increase;
+        if (moral > 100) moral = 100;
+    }
+
+    public void decreaseMoral(double decrease) {
+        moral -= decrease;
+        if (moral < 0) moral= 0;
+    }
 
     // MOVING TEMP!!!
-    // Vector based on current target
-    private void vector(){
-        vector = -(int) (atan2(currentLocation.x - currentTarget.x, currentLocation.y - currentTarget.y)*(180/PI));
-        direction = direction(vector);
-    }
-
     public void move() {
         if (direction == Directions.UP) Up();
         if (direction == Directions.UPRIGHT) UpRight();
@@ -536,10 +622,11 @@ public class Viking {
         int y = currentLocation.y;
         if (!tryLeft(x,y))
             if (!tryDownLeft(x,y))
-                if (!tryUpLeft(x,y))
-                    if (!tryDown(x,y))
+                if (!tryDown(x,y))
+                    if (!tryDownRight(x,y))
+                    if (!tryUpLeft(x,y))
                         if (!tryUp(x,y))
-                            if (!tryDownRight(x,y))
+
                                 if (!tryUpRight(x,y))
                                     tryRight(x,y);
     }
@@ -562,11 +649,11 @@ public class Viking {
         int y = currentLocation.y;
         if (!tryUp(x,y))
             if (!tryUpRight(x,y))
-                if (!tryUpLeft(x,y))
-                    if (!tryRight(x,y))
-                        if (!tryLeft(x,y))
-                            if (!tryDownRight(x,y))
-                                if (!tryUpLeft(x,y))
+                if (!tryRight(x,y))
+                    if (!tryDownRight(x,y))
+                        if (!tryUpLeft(x,y))
+                            if (!tryLeft(x,y))
+                                if (!tryDownLeft(x,y))
                                     tryDown(x,y);
     }
 
@@ -614,12 +701,12 @@ public class Viking {
         int y = currentLocation.y;
         if (!tryUpLeft(x,y))
             if (!tryLeft(x,y))
-                if (!tryUp(x,y))
-                    if (!tryDownLeft(x,y))
-                        if (!tryUpRight(x,y))
-                            if (!tryDown(x,y))
-                                if (!tryRight(x,y))
-                                    tryDownRight(x,y);
+                if (!tryDownLeft(x,y))
+                    if (!tryDown(x,y))
+                        if (!tryDownRight(x,y))
+                            if (!tryRight(x,y))
+                                if (!tryUpRight(x,y))
+                                    tryUp(x,y);
     }
 
     private void DownLeft() {
@@ -727,7 +814,11 @@ public class Viking {
         // Weapon
         primeWeapon.draw(g, currentLocation, size, vector);
         // Shield
-        if (shield != null) shield.draw(g, currentLocation, size, vector + shieldDirection);
+        if (shield != null) {
+            if (state == States.RETREAT || state == States.WAITING || state == States.LOOTING || state == States.LOSS || inBoat)
+                shield.draw(g, currentLocation, size, vector + shieldAtBack);
+            else
+                shield.draw(g, currentLocation, size, vector + shieldDirection);
+        }
     }
-
 }

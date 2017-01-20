@@ -87,9 +87,9 @@ public class Stats {
             for (Viking j : i.getVikings()){
                 vikingsHealth += j.getHealth();
                 lootOnVikings += j.getLoot();
-                if (j.getHealth() == 0) vikingsDead ++;
+                if (j.getState() == States.DEAD) vikingsDead ++;
                 else vikingsAlive ++;
-                if (j.getState() == 2) vikingsRetreated ++;
+                if (j.getState() == States.RETREAT) vikingsRetreated ++;
             }
         }
         switch (generator.getVikings().getState()){
@@ -109,9 +109,10 @@ public class Stats {
         for (SquadVillagers i : generator.getVillagers().getSquads()){
             for (Villager j : i.getVillagers() ){
                 villagersHealth += j.getHealth();
-                if (j.getHealth() == 0) villagersDead ++;
+                lootInVillage += j.getLoot();
+                if (j.getState() == States.DEAD) villagersDead ++;
                 else villagersAlive ++;
-                if (j.getState() == 2) villagersRetreated ++;
+                if (j.getState() == States.RETREAT) villagersRetreated ++;
             }
         }
 

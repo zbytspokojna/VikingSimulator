@@ -16,10 +16,11 @@ public class Vikings {
     private Terrain map;
     private Village village;
     private Fleet fleet;
+    private Building base;
 
     private ArrayList<SquadVillagers> enemies;
 
-    public Vikings(Terrain map, Village village, Fleet fleet, Building base){
+    public Vikings(Terrain map, Village village, Fleet fleet, Building base, Point minMax){
         // Variables for generating
         double angle = 2.2;
         double radius = 1.1 * sqrt((base.getWidth()*base.getWidth()) + base.getHeight()*base.getHeight());
@@ -32,14 +33,27 @@ public class Vikings {
         this.map = map;
         this.village = village;
         this.fleet = fleet;
+        this.base = base;
 
         // Generating squads
         for (Building building:village.getBuildings()){
             angle += 0.5;
             location.x = base.getLocation().x + (int) (radius * cos(angle));
             location.y = base.getLocation().y + (int) (radius * sin(angle));
-            squads.add(new SquadVikings(map, village, fleet, building, new Point(location), squads));
+            squads.add(new SquadVikings(map, village, fleet, building, new Point(location), base, squads, minMax));
         }
+
+        double loot = 0, size = 0;
+        int maxLoot;
+        for (Building building : village.getBuildings()){
+            loot += building.getLoot();
+        }
+        for (SquadVikings squadVikings : squads)
+            for (Viking viking : squadVikings.getVikings())
+                size ++;
+
+        maxLoot = (int) ceil(loot/size) + 1;
+        setMaxLoot(maxLoot);
     }
 
     // Setters
@@ -50,6 +64,10 @@ public class Vikings {
         }
     }
 
+    public void setMaxLoot(int maxLoot){
+        for (SquadVikings i : squads)
+            i.setMaxLoot(maxLoot);
+    }
 
     // Getters
     public ArrayList<SquadVikings> getSquads() {
@@ -65,11 +83,8 @@ public class Vikings {
     // OTHER FUNCTIONS
     public void estimateState(){
         // Update state of squads
-        for (SquadVikings i : squads) {
+        for (SquadVikings i : squads)
             i.estimateState();
-            //System.out.print(i.getState());
-        }
-        //System.out.println('\n');
 
         int lost = 0, retreated = 0, looted = 0, defeated = 0;
 
@@ -85,34 +100,48 @@ public class Vikings {
 
         // Regruping or retreating
         if (retreated != 0 && lost + retreated == squads.size()){
-            int size = 0, alive = 0;
+            int size = 0, alive = 0, inBoat = 0;
             for (SquadVikings i : squads) {
                 size += i.getSize();
                 if (i.getState() == States.RETREAT) {
                     for (Viking j : i.getVikings()) {
                         if (j.getState() != States.DEAD) alive++;
+                        if (j.getInBoat()) inBoat++;
                     }
                 }
             }
-            if (alive < size/2){
-                state = States.LOSS;
-                return;
-            }
-            else {
-                state = States.FIGHT;
-                for (SquadVikings i : squads)
-                    i.setReAttack();
-                return;
-            }
+            if (inBoat == alive)
+                if (alive < size/2){
+                    state = States.LOSS;
+                    return;
+                }
+                else {
+                    state = States.FIGHT;
+                    for (SquadVikings i : squads)
+                        i.setReAttack();
+                    return;
+                }
         }
 
         // Winning statement
         for (Building i : village.getBuildings()) if (i.getLoot() == 0) looted ++;
         for (SquadVillagers i : enemies) if (i.getState() == States.DEAD) defeated ++;
-        if (looted == village.getBuildings().size() || defeated == enemies.size()) {
+        if (looted == village.getBuildings().size()) {
             state = States.WIN;
             return;
         }
+        if (defeated == enemies.size() && looted != village.getBuildings().size()) {
+            System.out.println("Get the rest of the loot");
+            state = States.FIGHT;
+            for (SquadVikings i : squads)
+                i.setReAttack();
+            return;
+        }
+        if (defeated == enemies.size() && looted == village.getBuildings().size()) {
+            state = States.WIN;
+            return;
+        }
+
 
         // Else figth
         state = States.FIGHT;
@@ -140,6 +169,7 @@ public class Vikings {
         for (SquadVikings i : squads) {
             i.action();
         }
+        System.out.println();
     }
 
     // Drawing

@@ -40,24 +40,26 @@ public class Terrain {
         double radiusOfVillage = numCols*0.16;
         double radiusOfVikingIsland = numCols*0.33;
         double radiusOfVillagersIsland = numCols*0.8;
+        double radiusOfForest = numCols*0.1;
 
         // Generate seeds
         for (int i = 0; i < seeds; i++) {
             // Random seed location
             px[i] = r.nextInt(numRows);
             py[i] = r.nextInt(numCols);
+
+            // Forest
+            if ((px[i] < numRows/35 && py[i] < numRows/3) || (px[i] < numRows/3 && py[i] < numRows/35) || distanceC(0, px[i], 0, py[i]) < radiusOfForest)
+                color[i] = Colors.FOREST;
             // City
-            if (distanceC(numRows*0.25, px[i], numCols*0.25, py[i]) < radiusOfVillage) {
+            else if (distanceC(numRows*0.25, px[i], numCols*0.25, py[i]) < radiusOfVillage)
                 color[i] = Colors.CITY;
-            }
             // Viking island
-            else if ((distanceC(numRows, px[i], numCols, py[i]) < radiusOfVikingIsland)) {
+            else if ((distanceC(numRows, px[i], numCols, py[i]) < radiusOfVikingIsland))
                 color[i] = Colors.HILLS;
-                }
             // Main island
-            else if (distanceC(0, px[i], 0, py[i]) < radiusOfVillagersIsland) {
+            else if (distanceC(0, px[i], 0, py[i]) < radiusOfVillagersIsland)
                 color[i] = Colors.PLAINS;
-            }
             // Ocean
             else color[i] = Colors.OCEAN;
         }

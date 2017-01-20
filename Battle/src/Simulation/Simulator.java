@@ -8,16 +8,13 @@ public class Simulator extends JPanel {
 
     private Generator generator;
     private Stats stats;
-    private int rows, cols;
     private boolean state;
     private int queue;
 
-    public Simulator(int rows, int cols, int seeds){
-        this.rows = rows;
-        this.cols = cols;
+    public Simulator(int villageSize, Point vikingsSize, Point villagersSize){
         this.state = false;
         this.simulator = new JPanel();
-        this.generator = new Generator(rows,cols,seeds);
+        this.generator = new Generator(villageSize,vikingsSize,villagersSize);
         this.stats = new Stats(generator);
         this.queue = 0;
     }

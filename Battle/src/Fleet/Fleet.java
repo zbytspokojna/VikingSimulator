@@ -149,8 +149,6 @@ public class Fleet {
         }
     }
 
-
-    // todo NOT SUITED FOR REGROUPING
     public void estimateState(){
         int ready = 0, size = 0, onLand = 0;
 
@@ -158,23 +156,19 @@ public class Fleet {
         for (Boat i : boats){
             i.estimateState();
             if (i.getState() == 1) ready++;
+
             size += i.getVikings().size();
             for (Viking j : i.getVikings()){
                 if (j.onLand()) onLand++;
             }
         }
 
-        // If all vikings are onLand we set them to fight
+        // If all vikings are onLand we set them to fight ect
         if (onLand == size){
             state = 0;
-            for (Boat i : boats){
-                for (Viking j : i.getVikings()){
-                    if (map.getTerrainGrid()[j.getCurrentLocation().x][j.getCurrentLocation().y] == Colors.PLAINS)
-                        j.setFighting();
-                    if (map.getTerrainGrid()[j.getCurrentLocation().x][j.getCurrentLocation().y] == Colors.HILLS)
-                        j.setComeBack();
-                }
-            }
+            for (Boat i : boats)
+                for (Viking j : i.getVikings())
+                    j.setFighting();
             return;
         }
 

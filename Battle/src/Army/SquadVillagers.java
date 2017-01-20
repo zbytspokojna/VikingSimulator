@@ -27,7 +27,7 @@ public class SquadVillagers {
     private ArrayList<SquadVikings> enemies;
     private ArrayList<SquadVillagers> allies;
 
-    public SquadVillagers(Terrain map, Village village, Building target, ArrayList<SquadVillagers> allies){
+    public SquadVillagers(Terrain map, Village village, Building target, ArrayList<SquadVillagers> allies, Point minMax){
         // Variables for generation
         Random r = new Random();
         boolean generated, noColision;
@@ -37,7 +37,7 @@ public class SquadVillagers {
         double radius = sqrt((target.getWidth()*target.getWidth()) + target.getHeight()*target.getHeight())/2 + size;
 
         // Stats for squad
-        this.size = r.nextInt(3) + 8;
+        this.size = r.nextInt(minMax.y - minMax.x + 1) + minMax.x;
         this.villagers = new ArrayList<>();
         this.target = target;
         this.state = 1;
@@ -166,5 +166,18 @@ public class SquadVillagers {
     // Drawing
     public void draw(Graphics g) {
         for( Villager i : villagers) i.draw(g);
+    }
+
+    public int getSize() {
+        return size;
+    }
+
+    public void setReAttack() {
+    }
+
+    public void setLoss() {
+    }
+
+    public void setWin() {
     }
 }

@@ -8,8 +8,8 @@ public class States {
     public static final int FIGHT = 1;
     public static final int RETREAT = 2;
     public static final int LOOTING = 3;
-    public static final int INBOAT = 4;
-    public static final int WAITING = 5;
-    public static final int WIN = 6;
-    public static final int LOSS = 7;
+    public static final int WAITING = 4;
+    public static final int WIN = 5;
+    public static final int LOSS = 6;
+    public static final int IDLE = 7;
 }

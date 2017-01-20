@@ -6,41 +6,56 @@ import java.awt.*;
 import java.util.ArrayList;
 import java.util.Random;
 
+import static java.lang.Math.cos;
+import static java.lang.Math.sin;
+import static java.lang.Math.sqrt;
+import static Colision.Distance.distanceC;
+
 public class Village {
     private ArrayList<Building> buildings;
     private Point center;
 
     // Constructor
-    public Village(Terrain map) {
+    public Village(Terrain map, int villageSize) {
         // Variables for generating
         Random r = new Random();
         int size = map.numCols /30;
-        int border = map.numCols /40;
-        int max1 = map.numRows /17;
-        int min1 = map.numRows /27;
-        int max2 = map.numCols /20;
-        int min2 = map.numCols /25;
+        int border = map.numCols /30;
         boolean inBound;
+        int generated = 0;
 
         //Initializing
         buildings = new ArrayList<>();
         center = new Point(0,0);
 
         // Genereating village
-        for (int i = 0; i < map.numRows; i++) {
-            for (int j = 0; j < map.numCols; j++) {
-                if (map.getTerrainGrid()[i][j] == Colors.CITY && i > border && j > border) {
-                    inBound = true;
-                    for (int x = i - border; x < i + border + size; x++) {
-                        for (int y = j - border; y < j + border + size; y++) {
-                            if (map.getTerrainGrid()[x][y] != Colors.CITY) inBound = false;
-                        }
+        while (generated != villageSize){
+            int x = r.nextInt(map.numCols/2);
+            int y = r.nextInt(map.numCols/2);
+            if (map.getTerrainGrid()[x][y] == Colors.CITY) {
+                inBound = true;
+                // check if in borders of city
+                int tx,ty;
+                double angle2 = 0;
+                while (angle2 < 6.3 && inBound) {
+                    tx = x + (int) (border * cos(angle2));
+                    ty = y + (int) (border * sin(angle2));
+                    if(tx > 0 && ty > 0 && tx < map.numRows && ty < map.numCols)
+                        if (map.getTerrainGrid()[tx][ty] != Colors.CITY)
+                            inBound = false;
+                    angle2 += 0.3;
+                }
+                // check if not on other buildings
+                if (inBound)
+                    for (Building building : buildings){
+                        double radius = sqrt((building.getWidth()*building.getWidth()) + building.getHeight()*building.getHeight());
+                        double spread = 1.5;
+                        if (distanceC(x, building.getLocation().x, y, building.getLocation().y) < radius*spread)
+                            inBound = false;
                     }
-                    if (inBound) {
-                        buildings.add(new Building(new Point(i,j), size, size, r.nextInt(6-3+1)+3));
-                        i += r.nextInt(max1 - min1 + 1) + min1;
-                        j += r.nextInt(max2 - min2 + 1) + min2;
-                    }
+                if (inBound) {
+                    buildings.add(new Building(new Point(x, y), size, size, r.nextInt(4) + 3));
+                    generated++;
                 }
             }
         }

@@ -29,6 +29,8 @@ public class Boat {
     private ArrayList<Boat> boats;
     private int state;
     private int direction;
+    private boolean atDestination;
+    private int stuck;
 
     public Boat(Terrain map, Point location, int width, int length, int size, ArrayList<Boat> boats){
         this.size = size;
@@ -44,6 +46,8 @@ public class Boat {
         this.map = map;
         this.state = 0;
         this.boats = boats;
+        this.atDestination = false;
+        this.stuck = 0;
     }
 
     // Setters
@@ -55,7 +59,7 @@ public class Boat {
         for (double k = interval; k > 0.5; k -= 0.1) {
             double radius = length/k;
             // generating points in certain radius
-            for (double angle = 0; angle < 6.3; angle += 0.3925) {
+            for (double angle = 0; angle < 6.3; angle += 0.3) {
                 tx = target.getTarget().x + (int) (radius * cos(angle));
                 ty = target.getTarget().y + (int) (radius * sin(angle));
                 // if not outside the borders
@@ -67,7 +71,7 @@ public class Boat {
                         if (map.getTerrainGrid()[tx + (int) (length/1.9 * cos(angle2))][ty + (int) (length/1.9 * sin(angle2))] != Colors.OCEAN || map.getTerrainGrid()[tx + (int) (length/4 * cos(angle2))][ty + (int) (length/4 * sin(angle2))] != Colors.OCEAN) {
                             noColision = false;
                         }
-                        angle2 += 0.3925;
+                        angle2 += 0.3;
                     }
                     if (noColision){
                         this.targetLocation.x = tx;
@@ -133,6 +137,8 @@ public class Boat {
     }
 
     public void estimateState(){
+        if (currentLocation.x == targetLocation.x && currentLocation.y == targetLocation.y) atDestination = true;
+        else atDestination = false;
         int counted = 0;
         for (Viking i : vikings){
             if (i.getInBoat() || i.getState() == States.WAITING) counted++;
@@ -152,14 +158,43 @@ public class Boat {
         if (currentLocation.x != targetLocation.x || currentLocation.y != targetLocation.y) {
             this.vector();
 
-            if (direction == Directions.UP) Up();
-            if (direction == Directions.UPRIGHT) UpRight();
-            if (direction == Directions.RIGHT) Right();
-            if (direction == Directions.DOWNRIGHT) DownRight();
-            if (direction == Directions.DOWN) Down();
-            if (direction == Directions.DOWNLEFT) DownLeft();
-            if (direction == Directions.LEFT) Left();
-            if (direction == Directions.UPLEFT) UpLeft();
+            if (direction == Directions.UP) {
+                if (Up()) stuck = 0;
+                else stuck++;
+            }
+            if (direction == Directions.UPRIGHT) {
+                if (UpRight()) stuck = 0;
+                else stuck++;
+            }
+            if (direction == Directions.RIGHT) {
+                if (Right()) stuck = 0;
+                else stuck++;
+            }
+            if (direction == Directions.DOWNRIGHT) {
+                if (DownRight()) stuck = 0;
+                else stuck++;
+            }
+            if (direction == Directions.DOWN) {
+                if (Down()) stuck = 0;
+                else stuck++;
+            }
+            if (direction == Directions.DOWNLEFT) {
+                if (DownLeft()) stuck = 0;
+                else stuck++;
+            }
+            if (direction == Directions.LEFT) {
+                if (Left()) stuck = 0;
+                else stuck++;
+            }
+            if (direction == Directions.UPLEFT) {
+                if (UpLeft()) stuck = 0;
+                else stuck++;
+            }
+
+            if (stuck > 200) {
+                stuck = 0;
+                currentLocation = targetLocation;
+            }
 
             for (Viking i : vikings){
                 i.getCurrentLocation().x = currentLocation.x;
@@ -172,7 +207,8 @@ public class Boat {
         for (Boat i:boats) {
             if (i != this) {
                 double distance = distanceC((currentLocation.x +(width/2)),(i.currentLocation.x +(i.width/2)), (currentLocation.y +(length/2)), (i.currentLocation.y +(i.length/2)));
-                if (distance <= length/2 + i.getLength()/2 && i.getDirection() < direction - 1) return false;
+                if (distance <= length/2 + i.getLength()/2)
+                    if (i.getDirection() < direction - 1 && !i.atDestination) return false;
             }
         }
         return true;
@@ -196,7 +232,7 @@ public class Boat {
     }
 
     private boolean check(){
-        return (checkM() /*&& checkB()*/);
+        return (checkM() && checkB());
     }
 
     private void setPreviousLocation(int x, int y){
@@ -205,20 +241,80 @@ public class Boat {
     }
 
 
-    private void Left() {
+    private boolean Left() {
         int x = currentLocation.x;
         int y = currentLocation.y;
         if (!tryLeft(x,y))
             if (!tryDownLeft(x,y))
-                if (!tryUpLeft(x,y))
-                    if (!tryDown(x,y))
-                        if (!tryUp(x,y))
-                            if (!tryDownRight(x,y))
-                                if (!tryUpRight(x,y))
-                                    tryRight(x,y);
+                if (!tryDown(x,y))
+                    if (!tryDownRight(x,y))
+                        if (!tryRight(x,y))
+                            return false;
+        return true;
     }
 
-    private void Right() {
+    private boolean UpLeft() {
+        int x = currentLocation.x;
+        int y = currentLocation.y;
+        if (targetLocation.x < 500) {
+            if (!tryUpLeft(x, y))
+                if (!tryLeft(x, y))
+                    if (!tryDownLeft(x, y))
+                        if (!tryDown(x, y))
+                            if (!tryDownRight(x, y))
+                                return false;
+            return true;
+        }
+        else {
+            if (!tryUpLeft(x,y))
+                if (!tryUp(x,y))
+                    if (!tryUpRight(x,y))
+                        if (!tryRight(x,y))
+                            if (!tryDownRight(x,y))
+                                return false;
+            return true;
+        }
+    }
+
+    private boolean DownLeft() {
+        int x = currentLocation.x;
+        int y = currentLocation.y;
+        if (!tryDownLeft(x,y))
+            if (!tryDown(x,y))
+                if (!tryDownRight(x,y))
+                    if (!tryRight(x,y))
+                        if (!tryUpRight(x,y))
+                            return false;
+        return true;
+    }
+
+    private boolean Up() {
+        int x = currentLocation.x;
+        int y = currentLocation.y;
+        if (!tryUp(x,y))
+            if (!tryUpRight(x,y))
+                if (!tryRight(x,y))
+                    if (!tryDownRight(x,y))
+                        if (!tryDown(x,y))
+                            return false;
+        return true;
+    }
+
+    private boolean UpRight() {
+        int x = currentLocation.x;
+        int y = currentLocation.y;
+        if (!tryUpRight(x,y))
+            if (!tryRight(x,y))
+                if (!tryDownRight(x,y))
+                    if (!tryDown(x,y))
+                        if (!tryDownLeft(x,y))
+                            return false;
+        return true;
+    }
+
+
+
+    private boolean Right() {
         int x = currentLocation.x;
         int y = currentLocation.y;
         if (!tryRight(x,y))
@@ -228,23 +324,11 @@ public class Boat {
                         if (!tryUp(x,y))
                             if (!tryDownLeft(x,y))
                                 if (!tryUpLeft(x,y))
-                                    tryLeft(x,y);
+                                        return false;
+        return true;
     }
 
-    private void Up() {
-        int x = currentLocation.x;
-        int y = currentLocation.y;
-        if (!tryUp(x,y))
-            if (!tryUpRight(x,y))
-                if (!tryUpLeft(x,y))
-                    if (!tryRight(x,y))
-                        if (!tryLeft(x,y))
-                            if (!tryDownRight(x,y))
-                                if (!tryUpLeft(x,y))
-                                    tryDown(x,y);
-    }
-
-    private void Down() {
+    private boolean Down() {
         int x = currentLocation.x;
         int y = currentLocation.y;
         if (!tryDown(x,y))
@@ -254,23 +338,11 @@ public class Boat {
                         if (!tryLeft(x,y))
                             if (!tryUpRight(x,y))
                                 if (!tryUpLeft(x,y))
-                                    tryUp(x,y);
+                                        return false;
+        return true;
     }
 
-    private void UpRight() {
-        int x = currentLocation.x;
-        int y = currentLocation.y;
-        if (!tryUpRight(x,y))
-            if (!tryRight(x,y))
-                if (!tryUp(x,y))
-                    if (!tryDownRight(x,y))
-                        if (!tryUpLeft(x,y))
-                            if (!tryDown(x,y))
-                                if (!tryLeft(x,y))
-                                    tryDownLeft(x,y);
-    }
-
-    private void DownRight() {
+    private boolean DownRight() {
         int x = currentLocation.x;
         int y = currentLocation.y;
         if (!tryDownRight(x,y))
@@ -280,33 +352,8 @@ public class Boat {
                         if (!tryUpRight(x,y))
                             if (!tryLeft(x,y))
                                 if (!tryUp(x,y))
-                                    tryUpLeft(x,y);
-    }
-
-    private void UpLeft() {
-        int x = currentLocation.x;
-        int y = currentLocation.y;
-        if (!tryUpLeft(x,y))
-            if (!tryLeft(x,y))
-                if (!tryUp(x,y))
-                    if (!tryDownLeft(x,y))
-                        if (!tryUpRight(x,y))
-                            if (!tryDown(x,y))
-                                if (!tryRight(x,y))
-                                    tryDownRight(x,y);
-    }
-
-    private void DownLeft() {
-        int x = currentLocation.x;
-        int y = currentLocation.y;
-        if (!tryDownLeft(x,y))
-            if (!tryDown(x,y))
-                if (!tryLeft(x,y))
-                    if (!tryDownRight(x,y))
-                        if (!tryUpLeft(x,y))
-                            if (!tryRight(x,y))
-                                if (!tryUp(x,y))
-                                    tryUpRight(x,y);
+                                       return false;
+        return true;
     }
 
 
@@ -402,8 +449,6 @@ public class Boat {
         g.fillRect(currentLocation.x, currentLocation.y, 1, 1);
         // Target
         g.fillRect(targetLocation.x, targetLocation.y, 3, 3);
-        // Start
-        g.fillRect(startLocation.x, startLocation.y, 3, 3);
     }
 
 }

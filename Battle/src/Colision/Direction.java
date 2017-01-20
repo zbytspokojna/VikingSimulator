@@ -2,10 +2,16 @@ package Colision;
 
 import Schemes.Directions;
 
+import java.awt.*;
+
+import static java.lang.Math.PI;
+import static java.lang.Math.atan2;
+
 /**
  * Created by anka on 18.01.17.
  */
 public class Direction {
+
     public static int direction(int vector){
         if (vector < 22.5 && vector >= -22.5) return Directions.UP;
         if (vector < 67.5 && vector >= 22.5) return Directions.UPRIGHT;
@@ -16,5 +22,9 @@ public class Direction {
         if (vector < -67.5 && vector >= -112.5) return Directions.LEFT;
         if (vector < -22.5 && vector >= -67.5) return Directions.UPLEFT;
         else return -1;
+    }
+
+    public static int vector(Point start, Point end){
+        return  -(int) (atan2(start.x - end.x, start.y - end.y)*(180/PI));
     }
 }

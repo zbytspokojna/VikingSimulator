@@ -15,7 +15,7 @@ public class Villagers {
 
     private ArrayList<SquadVikings> enemies;
 
-    public Villagers(Terrain map, Village village){
+    public Villagers(Terrain map, Village village, Point minMax){
         // Initializing
         this.squads = new ArrayList<>();
         this.state = States.FIGHT;
@@ -25,7 +25,7 @@ public class Villagers {
 
         // Generating squads
         for (Building i:village.getBuildings()){
-            squads.add(new SquadVillagers(map, village, i, squads));
+            squads.add(new SquadVillagers(map, village, i, squads, minMax));
         }
     }
 
@@ -45,25 +45,55 @@ public class Villagers {
     // OTHER FUNCTIONS
     public void estimateState(){
         // Update state of squads
-        for (SquadVillagers i : squads) i.estimateState();
+        for (SquadVillagers i : squads)
+            i.estimateState();
 
-        int lost = 0, looted = 0, defeated = 0;
+        int lost = 0, retreated = 0, defeated = 0, looted = 0;
+
         // Losing statement
+        for (Building i : village.getBuildings())
+            if (i.getLoot() == 0)
+                looted ++;
+
         for (SquadVillagers i : squads) {
-            if (i.getState() == 0) lost ++;
+            if (i.getState() == States.DEAD) lost ++;
+            if (i.getState() == States.RETREAT) retreated++;
         }
-        for (Building i : village.getBuildings()) {
-            if (i.getLoot() == 0) looted ++;
-        }
+
         if (lost == squads.size() || looted == village.getBuildings().size()) {
             state = States.LOSS;
             return;
         }
 
-        // Winning statement
-        for (SquadVikings i : enemies) {
-            if (i.getState() == 0 || i.getState() == 2) defeated ++;
+        // Regruping or retreating
+        if (retreated != 0 && lost + retreated == squads.size()){
+            int size = 0, alive = 0, inForest = 0;
+            for (SquadVillagers i : squads) {
+                size += i.getSize();
+                if (i.getState() == States.RETREAT) {
+                    for (Villager j : i.getVillagers()) {
+                        if (j.getState() != States.DEAD) alive++;
+                        if (j.getInForest()) inForest++;
+                    }
+                }
+            }
+            if (inForest == alive)
+                if (alive < size/2){
+                    state = States.LOSS;
+                    return;
+                }
+                else {
+                    state = States.FIGHT;
+                    for (SquadVillagers i : squads)
+                        i.setReAttack();
+                    return;
+                }
         }
+
+        // Winning statement
+        for (SquadVikings i : enemies)
+            if (i.getState() == States.DEAD || i.getState() == States.LOSS)
+                defeated ++;
         if (defeated == enemies.size()) {
             state = States.WIN;
             return;
@@ -76,8 +106,20 @@ public class Villagers {
     // Actions based on state
     public void action(){
         estimateState();
+
+        switch (state){
+            case States.LOSS :
+                for (SquadVillagers i : squads) i.setLoss();
+                break;
+            case States.WIN :
+                for (SquadVillagers i : squads) i.setWin();
+                break;
+            case States.FIGHT :
+                break;
+        }
+
         for (SquadVillagers i : squads) {
-            if (state == States.FIGHT) i.action();
+            i.action();
         }
     }
 
