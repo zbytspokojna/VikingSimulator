@@ -8,7 +8,7 @@ import java.util.ArrayList;
 
 public class Villagers {
     private ArrayList<SquadVillagers> squads;
-    private int state;  //0-loss, 1-win, 2-fight
+    private int state;
 
     private Village village;
     private Terrain map;
@@ -41,6 +41,11 @@ public class Villagers {
     public ArrayList<SquadVillagers> getSquads() {
         return squads;
     }
+
+    public int getState() {
+        return state;
+    }
+
 
     // OTHER FUNCTIONS
     public void estimateState(){
@@ -126,9 +131,5 @@ public class Villagers {
     // Drawing
     public void draw(Graphics g){
         for (SquadVillagers i:squads) i.draw(g);
-    }
-
-    public int getState() {
-        return state;
     }
 }

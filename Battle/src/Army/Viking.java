@@ -29,6 +29,7 @@ public class Viking {
     private int state;
     private boolean inBoat;
     private int targeted;
+    private boolean leader;
 
     // Stats for locations and targets
     private int speed;
@@ -66,12 +67,21 @@ public class Viking {
     public Viking(Point location, Terrain map, Village village, Fleet fleet, Building targetBuilding, Building base, Color color, int size, ArrayList<SquadVikings> allies) {
         Random r = new Random();
         // Stats for battle
-        this.health = 100;
+        if (color == Colors.VIKING_LEADER) leader = true;
+        if (!leader) {
+            this.health = 100;
+            this.moralThreshold = r.nextInt(11) + 20;
+            this.defense = r.nextInt(3) + 1;
+            this.accuracy = r.nextInt(31) + 30;
+            this.dodge = r.nextInt(21) + 10;
+        } else {
+            this.health = 200;
+            this.moralThreshold = r.nextInt(6) + 5;
+            this.defense = r.nextInt(3) + 2;
+            this.accuracy = r.nextInt(31) + 40;
+            this.dodge = r.nextInt(21) + 20;
+        }
         this.moral = 100;
-        this.moralThreshold = r.nextInt(11) + 20;
-        this.defense = r.nextInt(3) + 1;
-        this.accuracy = r.nextInt(31) + 30;
-        this.dodge = r.nextInt(21) + 10;
         this.loot = 0;
         this.maxLoot = 1;
         this.state = States.FIGHT;
@@ -90,9 +100,9 @@ public class Viking {
         this.primeWeapon = Weapons.ARSENAL[r.nextInt(Weapons.ARSENAL.length)];
         this.thrownWeapons = new ArrayList<>();
         for (int i = 0; i < r.nextInt(6) + 5; i++) thrownWeapons.add(new ThrownWeapon());
-        if ( r.nextInt(101) > 50 ) this.shield = new Shield();
+        if (r.nextInt(101) > 50) this.shield = new Shield();
         else this.shield = null;
-        this.shieldDirection = - (r.nextInt(61) + 30);
+        this.shieldDirection = -(r.nextInt(61) + 30);
         this.shieldAtBack = -180;
 
         // Drawing
@@ -111,9 +121,9 @@ public class Viking {
 // HERE IS A BUG!!!!!!!!
         // Setting targetBoat
         boolean found = false;
-        for (Boat i : fleet.getBoats()){
+        for (Boat i : fleet.getBoats()) {
             if (i.getTargetBuilding() == targetBuilding)
-                if (i.getSize() > i.getVikings().size()){
+                if (i.getSize() > i.getVikings().size()) {
                     this.targetBoat = i;
                     i.addViking(this);
                     found = true;
@@ -220,6 +230,15 @@ public class Viking {
         return maxLoot;
     }
 
+    public int getDodge() {
+        return dodge;
+    }
+
+    public int getTargeted() {
+        return targeted;
+    }
+
+
 
     // OTHER FUNCTIONS
 
@@ -240,9 +259,9 @@ public class Viking {
                         enemy++;
             // update moral
             difference = enemy - ally;
-            if (difference > 0) decreaseMoral((difference * difference) / 4);
-            else increaseMoral((difference * difference) / 4);
-            if (state == States.RETREAT) increaseMoral(0.025);
+            if (difference > 0) decreaseMoral((difference * difference) / 5);
+            else increaseMoral((difference * difference) / 5);
+            if (state == States.RETREAT) increaseMoral(0.01);
         }
     }
 
@@ -297,7 +316,7 @@ public class Viking {
     private void updateCurrentTarget(){
         switch (state){
             case States.DEAD:
-                currentTarget = null;
+                currentTarget = currentLocation;
                 break;
             case States.FIGHT:
                 if (map.getTerrainGrid()[currentLocation.x][currentLocation.y] == Colors.HILLS)
@@ -334,35 +353,31 @@ public class Viking {
 
     public void findTargetEnemy() {
         boolean found = false;
-        // If fighting find target
-        if (state == States.FIGHT && (targetEnemy == null || targetEnemy.getHealth() == 0)) {
-            if (targetEnemy != null && targetEnemy.getHealth() == 0) {
+        // If fighting or idling find target
+        if ((state == States.FIGHT || state == States.IDLE) && (targetEnemy == null || targetEnemy.getHealth() == 0)) {
+            if (targetEnemy != null && (targetEnemy.getState() == States.DEAD || targetEnemy.getState() == States.RETREAT || targetEnemy.getState() == States.LOSS)) {
                 targetEnemy.unsetTargeted();
                 targetEnemy = null;
             }
-            if (distanceC(currentLocation.x, targetBuilding.getLocation().x, currentLocation.y, targetBuilding.getLocation().y) < 200) {
-                double radius = sqrt((targetBuilding.getWidth()*targetBuilding.getWidth()) + targetBuilding.getHeight()*targetBuilding.getHeight());
-                for (SquadVillagers i : enemies) {
-                    for (Villager j : i.getVillagers()) {
-                        if (j.getHealth() > 0) {
-                            if (distanceC(targetBuilding.getLocation().x, j.getCurrentLocation().x, targetBuilding.getLocation().y, j.getCurrentLocation().y) < radius) {
-                                if (j.getTargeted() < 2) {
-                                    targetEnemy = j;
-                                    j.setTargeted();
-                                    state = States.FIGHT;
-                                    found = true;
-                                }
+            double radius = sqrt((targetBuilding.getWidth()*targetBuilding.getWidth()) + targetBuilding.getHeight()*targetBuilding.getHeight());
+            for (SquadVillagers i : enemies) {
+                for (Villager j : i.getVillagers())
+                    if (j.getHealth() > 0)
+                        if (distanceC(targetBuilding.getLocation().x, j.getCurrentLocation().x, targetBuilding.getLocation().y, j.getCurrentLocation().y) < radius*1.5) {
+                            if (j.getTargeted() < 3 && (j.getState() != States.RETREAT || j.getState() != States.LOSS)) {
+                                targetEnemy = j;
+                                j.setTargeted();
+                                state = States.FIGHT;
+                                found = true;
                             }
-                        }
-                        if (found) return;
-                    }
                     if (found) return;
                 }
+                if (found) return;
             }
             return;
         }
         // If not figthing loose target
-        if (state != States.FIGHT && targetEnemy != null){
+        if (state != States.FIGHT && state != States.IDLE && targetEnemy != null){
             targetEnemy.unsetTargeted();
             targetEnemy = null;
         }
@@ -381,17 +396,16 @@ public class Viking {
         return distanceC(currentLocation.x, targetBoat.getCurrentLocation().x, currentLocation.y, targetBoat.getCurrentLocation().y);
     }
 
-
+    // Actions
     public void action() {
         // update target
         findTargetEnemy();
         updateCurrentTarget();
 
-        System.out.println(state + ":" + moral);
         // update vectors
         vector = vector(currentLocation, currentTarget);
         direction = direction(vector);
-        double radius = sqrt((targetBuilding.getWidth()*targetBuilding.getWidth()) + targetBuilding.getHeight()*targetBuilding.getHeight())/2;
+        double radius = sqrt((targetBuilding.getWidth()*targetBuilding.getWidth()) + targetBuilding.getHeight()*targetBuilding.getHeight());
 
         // if dead
         if (state == States.DEAD){
@@ -425,6 +439,13 @@ public class Viking {
             }
             else if (distanceFromTargetEnemy() <= size + primeWeapon.getRange()) {
                 attack();
+                return;
+            }
+            else if (distanceFromTargetBuilding() > radius*5){
+                targetEnemy.unsetTargeted();
+                targetEnemy = null;
+                currentTarget = targetBuilding.getLocation();
+                move();
                 return;
             }
             else {
@@ -533,7 +554,7 @@ public class Viking {
         Random r = new Random();
         if (r.nextInt(101) <= accuracy + primeWeapon.getAccuracy()){
             if (r.nextInt(101) > targetEnemy.getDodge()) {
-                int damage = r.nextInt(5) + 1;
+                int damage = r.nextInt(8) + 1;
                 targetEnemy.damage(damage + primeWeapon.getDamage(), primeWeapon.getPenetration());
                 // if got a hit
                 moral += damage/30;
@@ -548,6 +569,7 @@ public class Viking {
         else moral -= 0.03;
     }
 
+    // TODO: 20.01.17 make him and people around loss moral
     public void damage(int damage, int penetration) {
         int def = defense;
         if (shield != null ) def += shield.getDefense();
@@ -556,6 +578,10 @@ public class Viking {
         if (def >= damage) return;
         health -= (damage - def);
         if (health < 0) health = 0;
+        if (leader)
+            color = new Color(color.getRed() + (damage-def)/2, color.getGreen() + (damage-def)/2, color.getBlue());
+        else
+            color = new Color(color.getRed() + (damage-def)*2, color.getGreen() + (damage-def)*2 , color.getBlue());
     }
 
     public void increaseMoral(double increase) {
@@ -567,6 +593,7 @@ public class Viking {
         moral -= decrease;
         if (moral < 0) moral= 0;
     }
+
 
     // MOVING TEMP!!!
     public void move() {
@@ -806,19 +833,21 @@ public class Viking {
 
     // Drawing
     public void draw(Graphics g) {
-        Graphics2D g2d = (Graphics2D) g.create();
-        // Viking
-        g2d.setColor(color);
-        g2d.rotate(toRadians(vector), currentLocation.x, currentLocation.y);
-        g2d.fillOval(currentLocation.x - size / 2, currentLocation.y - size / 2, size, size);
-        // Weapon
-        primeWeapon.draw(g, currentLocation, size, vector);
-        // Shield
-        if (shield != null) {
-            if (state == States.RETREAT || state == States.WAITING || state == States.LOOTING || state == States.LOSS || inBoat)
-                shield.draw(g, currentLocation, size, vector + shieldAtBack);
-            else
-                shield.draw(g, currentLocation, size, vector + shieldDirection);
+        if (health > 0) {
+            Graphics2D g2d = (Graphics2D) g.create();
+            // Viking
+            g2d.setColor(color);
+            g2d.rotate(toRadians(vector), currentLocation.x, currentLocation.y);
+            g2d.fillOval(currentLocation.x - size / 2, currentLocation.y - size / 2, size, size);
+            // Weapon
+            primeWeapon.draw(g, currentLocation, size, vector);
+            // Shield
+            if (shield != null) {
+                if (state == States.RETREAT || state == States.WAITING || state == States.LOOTING || state == States.LOSS || inBoat)
+                    shield.draw(g, currentLocation, size, vector + shieldAtBack);
+                else
+                    shield.draw(g, currentLocation, size, vector + shieldDirection);
+            }
         }
     }
 }

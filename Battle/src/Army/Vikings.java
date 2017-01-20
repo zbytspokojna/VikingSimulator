@@ -74,7 +74,6 @@ public class Vikings {
         return squads;
     }
 
-
     public int getState() {
         return state;
     }
@@ -162,6 +161,7 @@ public class Vikings {
                 for (SquadVikings i : squads) i.setWin();
                 break;
             case States.FIGHT :
+
                 break;
         }
 
@@ -169,7 +169,6 @@ public class Vikings {
         for (SquadVikings i : squads) {
             i.action();
         }
-        System.out.println();
     }
 
     // Drawing

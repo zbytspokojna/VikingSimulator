@@ -14,6 +14,8 @@ import java.awt.*;
 import java.util.ArrayList;
 import java.util.Random;
 
+import static Colision.Direction.direction;
+import static Colision.Direction.vector;
 import static Colision.Distance.distanceC;
 import static Colision.Moving.*;
 import static Colision.Moving.moveUpLeft;
@@ -32,13 +34,15 @@ public class Villager {
     private int state;
     private boolean inForest;
     private int targeted;
+    private boolean leader;
 
     // Stats for locations and targets
     private Point speed;
     private Point currentLocation;
     private Point previousLocation;
-    private Building targetLocation;
+    private Building targetBuilding;
     private Viking targetEnemy;
+    private Point currentTarget;
     private int vector;
     private int direction;
 
@@ -59,27 +63,37 @@ public class Villager {
     private ArrayList<SquadVillagers> allies;
     private ArrayList<SquadVikings> enemies;
 
-    public Villager(Point location, Terrain map, Village village, Building targetLocation, Color color, int size, ArrayList<SquadVillagers> allies){
+    public Villager(Point location, Terrain map, Village village, Building targetBuilding, Color color, int size, ArrayList<SquadVillagers> allies){
         Random r = new Random();
         // Stats for battle
-        this.health = 100;
-        this.moral = r.nextInt(21) + 40;
-        this.moralThreshold = r.nextInt(11) + 20;
-        this.defense = r.nextInt(3) + 1;
-        this.accuracy = r.nextInt(31) + 30;
-        this.dodge = r.nextInt(21) + 10;
+        if (color == Colors.VILLAGER_LEADER) leader = true;
+        if (!leader) {
+            this.health = 100;
+            this.moralThreshold = r.nextInt(11) + 20;
+            this.defense = r.nextInt(3) + 1;
+            this.accuracy = r.nextInt(31) + 30;
+            this.dodge = r.nextInt(21) + 10;
+        }
+        else {
+            this.health = 200;
+            this.moralThreshold = r.nextInt(6) + 5;
+            this.defense = r.nextInt(3) + 2;
+            this.accuracy = r.nextInt(31) + 40;
+            this.dodge = r.nextInt(21) + 20;
+        }
+        this.moral = 100;
         this.loot = 0;
         this.state = 1;
         this.inForest = false;
         this.targeted = 0;
 
+
         // Stats for locations and targets
         this.speed = new Point(1,1);
         this.currentLocation = new Point(location);
         this.previousLocation = new Point(location);
-        this.targetLocation = targetLocation;
+        this.targetBuilding = targetBuilding;
         this.targetEnemy = null;
-        this.vector();
 
         // Stats for armament
         this.primeWeapon = Weapons.ARSENAL[r.nextInt(Weapons.ARSENAL.length)];
@@ -97,6 +111,10 @@ public class Villager {
 
         // Other agents
         this.allies = allies;
+
+        currentTarget = targetBuilding.getLocation();
+        vector = vector(currentLocation, currentTarget);
+        direction = direction(vector);
     }
 
     // Setters
@@ -104,8 +122,32 @@ public class Villager {
         this.enemies = enemies;
     }
 
-    public void setTargetLocation(Building targetLocation) {
-        this.targetLocation = targetLocation;
+    public void setTargetBuilding(Building targetBuilding) {
+        this.targetBuilding = targetBuilding;
+    }
+
+    public void setWin() {
+        if (state != States.DEAD)
+            state = States.WIN;
+        moral = 100;
+    }
+
+    public void setLoss() {
+        if (state != States.DEAD)
+            state = States.LOSS;
+        moral = 100;
+    }
+
+    public void setReAttack() {
+        if (state != States.DEAD) {
+            state = States.FIGHT;
+            moral = 100;
+        }
+    }
+
+    public void setFighting() {
+        if (state != States.DEAD && state != States.LOSS && state != States.WIN && state != States.RETREAT)
+            state = States.FIGHT;
     }
 
     public void setTargeted() {
@@ -145,6 +187,9 @@ public class Villager {
         return inForest;
     }
 
+
+    // OTHER FUNTIONS
+
     // Moral
     public void updateMoral() {
         int ally = 0, enemy = 0, difference;
@@ -162,9 +207,9 @@ public class Villager {
                         enemy++;
             // update moral
             difference = enemy - ally;
-            if (difference > 0) decreaseMoral((difference * difference) / 4);
-            else increaseMoral((difference * difference) / 4);
-            if (state == States.RETREAT) increaseMoral(0.025);
+            if (difference > 0) decreaseMoral((difference * difference) / 2);
+            else increaseMoral((difference * difference) / 2);
+            if (state == States.RETREAT) increaseMoral(0.01);
         }
     }
 
@@ -173,12 +218,200 @@ public class Villager {
         return moral > moralThreshold;
     }
 
+    // State
+    public void estimateState() {
+        // No matter what state check if not dead or retreated
+        if (health == 0) {
+            state = States.DEAD;
+            return;
+        }
+        if (!moralCheck()) {
+            state = States.RETREAT;
+            return;
+        }
+        switch (state){
+            case States.WIN:
+                break;
+            case States.LOSS:
+                break;
+            case States.DEAD:
+                break;
+            case States.RETREAT:
+                if (moralCheck()) state = States.FIGHT;
+                break;
+            case States.FIGHT:
+                if (!moralCheck()) state = States.RETREAT;
+                break;
+            case States.IDLE:
+                if (targetEnemy != null ) state = States.FIGHT;
+        }
+    }
 
+    // Updating currentTarget based on state
+    private void updateCurrentTarget(){
+        switch (state){
+            case States.DEAD:
+                currentTarget = currentLocation;
+                break;
+            case States.FIGHT:
+                if (targetEnemy != null)
+                    currentTarget = targetEnemy.getCurrentLocation();
+                else
+                    currentTarget = targetBuilding.getLocation();
+                break;
+            case States.RETREAT:
+                currentTarget = new Point(20,20);
+                break;
+            case States.LOSS:
+                currentTarget = new Point(20,20);
+                break;
+            case States.WIN:
+                currentTarget = village.getCenter();
+                break;
+            case States.IDLE:
+                currentTarget = targetBuilding.getLocation();
+        }
+    }
 
+    public void findTargetEnemy() {
+        boolean found = false;
+        // If fighting or idling find target
+        if ((state == States.FIGHT || state == States.IDLE) && (targetEnemy == null || targetEnemy.getHealth() == 0)) {
+            if (targetEnemy != null && (targetEnemy.getState() == States.DEAD || targetEnemy.getState() == States.RETREAT || targetEnemy.getState() == States.LOSS)) {
+                targetEnemy.unsetTargeted();
+                targetEnemy = null;
+            }
+            double radius = sqrt((targetBuilding.getWidth()*targetBuilding.getWidth()) + targetBuilding.getHeight()*targetBuilding.getHeight());
+            for (SquadVikings i : enemies) {
+                for (Viking j : i.getVikings()) {
+                    if (j.getHealth() > 0)
+                        if (distanceC(targetBuilding.getLocation().x, j.getCurrentLocation().x, targetBuilding.getLocation().y, j.getCurrentLocation().y) < radius*2)
+                            if (j.getTargeted() < 3 && (j.getState() != States.RETREAT || j.getState() != States.LOSS)) {
+                                targetEnemy = j;
+                                j.setTargeted();
+                                state = States.FIGHT;
+                                found = true;
+                            }
+                    if (found) return;
+                }
+                if (found) return;
+            }
+            return;
+        }
+        // If not figthing loose target
+        if (state != States.FIGHT && state != States.IDLE && targetEnemy != null){
+            targetEnemy.unsetTargeted();
+            targetEnemy = null;
+        }
+    }
 
+    // Distance from targets
+    private double distanceFromTargetBuilding(){
+        return distanceC(currentLocation.x, targetBuilding.getLocation().x, currentLocation.y, targetBuilding.getLocation().y);
+    }
 
+    private double distanceFromTargetEnemy() {
+        return distanceC(currentLocation.x, targetEnemy.getCurrentLocation().x, currentLocation.y, targetEnemy.getCurrentLocation().y);
+    }
 
+    public void action() {
+        // update target
+        findTargetEnemy();
+        updateCurrentTarget();
 
+        // update vectors
+        vector = vector(currentLocation, currentTarget);
+        direction = direction(vector);
+        double radius = sqrt((targetBuilding.getWidth()*targetBuilding.getWidth()) + targetBuilding.getHeight()*targetBuilding.getHeight());
+
+        // if dead
+        if (state == States.DEAD){
+            if (loot != 0)
+                dropLoot();
+            return;
+        }
+
+        // if fighting // TODO: 20.01.17 implement behaviour for bow
+        if (state == States.FIGHT){
+            if (targetEnemy == null){
+                if (distanceFromTargetBuilding() > radius)
+                    move();
+                else
+                    state = States.IDLE;
+                return;
+            }
+            else if (distanceFromTargetEnemy() <= size + primeWeapon.getRange()) {
+                attack();
+                return;
+            }
+            else if (distanceFromTargetBuilding() > radius*5){
+                targetEnemy.unsetTargeted();
+                targetEnemy = null;
+                currentTarget = targetBuilding.getLocation();
+                move();
+                return;
+            }
+            else {
+                move();
+                return;
+            }
+        }
+
+        // If going to the forest
+        if (state == States.RETREAT){
+            if (map.getTerrainGrid()[currentLocation.x][currentLocation.y] == Colors.FOREST)
+                inForest = true;
+            move();
+            return;
+        }
+
+        // If battle is done
+        if (state == States.WIN || state == States.LOSS){
+            move();
+            return;
+        }
+
+        if (state == States.IDLE){
+            findTargetEnemy();
+            updateCurrentTarget();
+            if (targetBuilding.getLoot() == 0) changeTargetBuilding();
+        }
+    }
+
+    private void changeTargetBuilding() {
+        for (Building building : village.getBuildings()){
+            if (building != targetBuilding && building.getLoot() > 0 ){
+                targetBuilding = building;
+                state = States.FIGHT;
+            }
+        }
+    }
+
+    // TODO: 19.01.17 implement leaving loot on the floor
+    private void dropLoot() {
+        loot = 0;
+    }
+
+    private void attack() {
+        Random r = new Random();
+        if (r.nextInt(101) <= accuracy + primeWeapon.getAccuracy()){
+            if (r.nextInt(101) > targetEnemy.getDodge() ) {
+                int damage = r.nextInt(5) + 1;
+                targetEnemy.damage(damage + primeWeapon.getDamage(), primeWeapon.getPenetration());
+                // if got a hit
+                moral += damage/30;
+                for (SquadVillagers squadVillagers : allies)
+                    for (Villager villager : squadVillagers.getVillagers())
+                        if (villager != this)
+                            if (distanceC(currentLocation.x, villager.getCurrentLocation().x, currentLocation.y, villager.getCurrentLocation().y) <= 20)
+                                villager.increaseMoral(0.01);
+            }
+        }
+        // If he missed
+        else moral -= 0.03;
+    }
+
+    // TODO: 20.01.17 make him and people around loss moral
     public void damage(int damage, int penetration) {
         int def = defense;
         if (shield != null ) def += shield.getDefense();
@@ -187,11 +420,10 @@ public class Villager {
         if (def >= damage) return;
         health -= (damage - def);
         if (health < 0) health = 0;
-    }
-
-    // OTHER FUNTIONS
-
-    public void estimateState() {
+        if (leader)
+            color = new Color(color.getRed(), color.getGreen() + (damage-def)/2, color.getBlue() + (damage-def)/2);
+        else
+            color = new Color(color.getRed(), color.getGreen() + (damage-def)*2 , color.getBlue() + (damage-def)*2);
     }
 
     public void increaseMoral(double increase) {
@@ -202,12 +434,6 @@ public class Villager {
     public void decreaseMoral(double decrease) {
         moral -= decrease;
         if (moral < 0) moral= 0;
-    }
-
-
-
-    private void vector(){              // TODO: 12.01.17 make it based on type of target  
-        vector = -(int) (atan2(currentLocation.x - targetLocation.getLocation().x, currentLocation.y - targetLocation.getLocation().y)*(180/PI));
     }
 
 

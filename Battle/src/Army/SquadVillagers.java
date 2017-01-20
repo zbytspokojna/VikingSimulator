@@ -4,6 +4,7 @@ import Map.Building;
 import Map.Terrain;
 import Map.Village;
 import Schemes.Colors;
+import Schemes.States;
 
 import java.awt.*;
 import java.util.ArrayList;
@@ -96,6 +97,24 @@ public class SquadVillagers {
         }
     }
 
+    public void setReAttack() {
+        if (state != States.DEAD) state = States.FIGHT;
+        for (Villager i : villagers)
+            i.setReAttack();
+    }
+
+    public void setLoss() {
+        if (state != States.DEAD) state = States.LOSS;
+        for (Villager i : villagers)
+            i.setLoss();
+    }
+
+    public void setWin() {
+        if (state != States.DEAD) state = States.WIN;
+        for (Villager i : villagers)
+            i.setWin();
+    }
+
     // Getters
     public int getState() {
         return state;
@@ -105,47 +124,39 @@ public class SquadVillagers {
         return villagers;
     }
 
+    public int getSize() {
+        return size;
+    }
+
     // OTHER FUNTIONS
     public void estimateState(){
         // Update state of squads
-        for (Villager i : villagers) i.estimateState();
-
-        int dead = 0, counted = 0, retreated = 0;
-        // All_dead
-        for (Villager i : villagers) {
-            if (i.getState() == 0) dead ++;
+        for (Villager i : villagers)
+            i.estimateState();
+        int dead = 0, retreated = 0, fighting = 0;
+        switch (state){
+            case States.DEAD:
+                break;
+            case States.FIGHT:
+                for (Villager i : villagers) {
+                    if (i.getState() == States.RETREAT) retreated++;
+                    if (i.getState() == States.DEAD) dead ++;
+                }
+                if (dead == villagers.size()) state = States.DEAD;
+                if (retreated != 0 && (dead + retreated) == villagers.size()) state = States.RETREAT;
+                break;
+            case States.RETREAT:
+                for (Villager i : villagers) {
+                    if (i.getState() == States.FIGHT)
+                        fighting++;
+                }
+                if (fighting > 0) state = States.FIGHT;
+                break;
+            case States.LOSS:
+                break;
+            case States.WIN:
+                break;
         }
-        if (dead == villagers.size()) {
-            state = 0;
-            return;
-        }
-
-        // Looting
-        for (SquadVikings i : enemies) {
-            for (Viking j : i.getVikings()) {
-                if (distanceC(target.getLocation().x, j.getCurrentLocation().x, target.getLocation().y, j.getCurrentLocation().y) < map.numCols / 25) counted++;
-            }
-        }
-        if (counted < 2) {
-            state = 3;
-            return;
-        }
-
-        // Retreated
-        for (Villager i : villagers){
-            if (i.getState() == 4) retreated ++;
-        }
-        if (retreated == villagers.size() && target.getLoot() != 0){
-            state = 2;
-            return;
-        }
-
-        // Else figth
-        state = 1;
-    }
-
-
-    public void action() {                                  //toDo action functions
     }
 
     // Updates
@@ -155,7 +166,10 @@ public class SquadVillagers {
             for (Building i : village.getBuildings()){
                 if (i.getLoot() != 0){
                     target = i;
-                    for (Villager j:villagers) j.setTargetLocation(i);
+                    for (Villager j:villagers) {
+                        j.setFighting();
+                        j.setTargetBuilding(i);
+                    }
                     found = true;
                 }
                 if (found) break;
@@ -163,21 +177,13 @@ public class SquadVillagers {
         }
     }
 
+    public void action() {
+        updateTargetLocation();
+        for (Villager i : villagers) i.action();
+    }
+
     // Drawing
     public void draw(Graphics g) {
         for( Villager i : villagers) i.draw(g);
-    }
-
-    public int getSize() {
-        return size;
-    }
-
-    public void setReAttack() {
-    }
-
-    public void setLoss() {
-    }
-
-    public void setWin() {
     }
 }

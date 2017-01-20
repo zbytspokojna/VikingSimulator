@@ -192,7 +192,6 @@ public class SquadVikings {
         }
     }
 
-    // // TODO: 18.01.17 make WIN case so they loot what is left
     public void action() {
         updateTargetLocation();
         int looting = 0, counted = 0;
@@ -212,7 +211,7 @@ public class SquadVikings {
                         for (Villager j : i.getVillagers())
                             if (j.getHealth() > 0)
                                 // If enemy is alive and in range
-                                if (distanceC(target.getLocation().x, j.getCurrentLocation().x, target.getLocation().y, j.getCurrentLocation().y) < radius)
+                                if (distanceC(target.getLocation().x, j.getCurrentLocation().x, target.getLocation().y, j.getCurrentLocation().y) < radius*2)
                                     counted++;
                     // If no enemies set some vikings to loot
                     if (counted == 0)
@@ -226,6 +225,7 @@ public class SquadVikings {
                 }
                 break;
             case States.WIN:
+                // TODO: 18.01.17 make WIN case so they loot what is left
                 break;
         }
 
