@@ -80,7 +80,7 @@ public class SquadVillagers {
 
                 // adding villager to squad
                 if (noColision) {
-                    if (villagers.size() == 0) color = Colors.VILLAGER_LEADER;                              // toDo make leader a boss! good stats ect :)
+                    if (villagers.size() == 0) color = Colors.VILLAGER_LEADER;
                     else color = Colors.VILLAGER;
                     villagers.add(new Villager(location, map, village, target, color, size, allies));
                     generated = true;

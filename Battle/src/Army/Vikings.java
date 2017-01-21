@@ -89,9 +89,10 @@ public class Vikings {
 
         // Losing statement
         for (SquadVikings i : squads) {
-            if (i.getState() == States.DEAD) lost ++;
+            if (i.getState() == States.DEAD || i.getState() == States.LOSS) lost ++;
             if (i.getState() == States.RETREAT) retreated++;
         }
+        // loss
         if (lost == squads.size()) {
             state = States.LOSS;
             return;
@@ -110,10 +111,12 @@ public class Vikings {
                 }
             }
             if (inBoat == alive)
+                // loss
                 if (alive < size/2){
                     state = States.LOSS;
                     return;
                 }
+                // reattack
                 else {
                     state = States.FIGHT;
                     for (SquadVikings i : squads)
@@ -123,24 +126,30 @@ public class Vikings {
         }
 
         // Winning statement
-        for (Building i : village.getBuildings()) if (i.getLoot() == 0) looted ++;
-        for (SquadVillagers i : enemies) if (i.getState() == States.DEAD) defeated ++;
+        for (Building i : village.getBuildings())
+            if (i.getLoot() == 0)
+                looted ++;
+        for (SquadVillagers i : enemies)
+            if (i.getState() == States.DEAD || i.getState() == States.LOSS)
+                defeated ++;
+
+        // win
         if (looted == village.getBuildings().size()) {
             state = States.WIN;
             return;
         }
+        // get the rest of the loot
         if (defeated == enemies.size() && looted != village.getBuildings().size()) {
-            System.out.println("Get the rest of the loot");
             state = States.FIGHT;
             for (SquadVikings i : squads)
                 i.setReAttack();
             return;
         }
+        // win
         if (defeated == enemies.size() && looted == village.getBuildings().size()) {
             state = States.WIN;
             return;
         }
-
 
         // Else figth
         state = States.FIGHT;
@@ -161,7 +170,6 @@ public class Vikings {
                 for (SquadVikings i : squads) i.setWin();
                 break;
             case States.FIGHT :
-
                 break;
         }
 

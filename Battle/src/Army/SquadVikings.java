@@ -83,7 +83,7 @@ public class SquadVikings {
 
                 // adding viking to squad
                 if (noColision) {
-                    if (vikings.size() == 0) color = Colors.VIKING_LEADER;                              // toDo make leader a boss! good stats ect :)
+                    if (vikings.size() == 0) color = Colors.VIKING_LEADER;
                     else color = Colors.VIKING;
                     vikings.add(new Viking(location, map, village, fleet, target, base, color, size, allies));
                     generated = true;
@@ -169,7 +169,6 @@ public class SquadVikings {
             case States.LOSS:
                 break;
             case States.WIN:
-                // TODO: 19.01.17 make them loot the rest of buildings if there is still loot
                 break;
         }
     }
@@ -211,7 +210,7 @@ public class SquadVikings {
                         for (Villager j : i.getVillagers())
                             if (j.getHealth() > 0)
                                 // If enemy is alive and in range
-                                if (distanceC(target.getLocation().x, j.getCurrentLocation().x, target.getLocation().y, j.getCurrentLocation().y) < radius*2)
+                                if (distanceC(target.getLocation().x, j.getCurrentLocation().x, target.getLocation().y, j.getCurrentLocation().y) < radius*2.5)
                                     counted++;
                     // If no enemies set some vikings to loot
                     if (counted == 0)
@@ -225,7 +224,6 @@ public class SquadVikings {
                 }
                 break;
             case States.WIN:
-                // TODO: 18.01.17 make WIN case so they loot what is left
                 break;
         }
 

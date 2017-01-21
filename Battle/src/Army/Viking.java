@@ -30,6 +30,7 @@ public class Viking {
     private boolean inBoat;
     private int targeted;
     private boolean leader;
+    private int idleCounter;
 
     // Stats for locations and targets
     private int speed;
@@ -304,6 +305,10 @@ public class Viking {
                 break;
             case States.IDLE:
                 if (targetEnemy != null ) state = States.FIGHT;
+                else {
+                    idleCounter ++;
+                    if (idleCounter > 200) state = States.RETREAT;
+                }
         }
     }
 
@@ -311,6 +316,7 @@ public class Viking {
         estimateState();
         return (state == States.WAITING || state == States.DEAD);
     }
+
 
     // Updating currentTarget based on state
     private void updateCurrentTarget(){
@@ -351,7 +357,7 @@ public class Viking {
         if (inBoat) currentTarget = targetBoat.getTargetLocation();
     }
 
-    public void findTargetEnemy() {
+    public void findTargetEnemy(int radius) {
         boolean found = false;
         // If fighting or idling find target
         if ((state == States.FIGHT || state == States.IDLE) && (targetEnemy == null || targetEnemy.getHealth() == 0)) {
@@ -359,11 +365,11 @@ public class Viking {
                 targetEnemy.unsetTargeted();
                 targetEnemy = null;
             }
-            double radius = sqrt((targetBuilding.getWidth()*targetBuilding.getWidth()) + targetBuilding.getHeight()*targetBuilding.getHeight());
+            double building = sqrt((targetBuilding.getWidth()*targetBuilding.getWidth()) + targetBuilding.getHeight()*targetBuilding.getHeight());
             for (SquadVillagers i : enemies) {
                 for (Villager j : i.getVillagers())
                     if (j.getHealth() > 0)
-                        if (distanceC(targetBuilding.getLocation().x, j.getCurrentLocation().x, targetBuilding.getLocation().y, j.getCurrentLocation().y) < radius*1.5) {
+                        if (distanceC(targetBuilding.getLocation().x, j.getCurrentLocation().x, targetBuilding.getLocation().y, j.getCurrentLocation().y) < building*radius) {
                             if (j.getTargeted() < 3 && (j.getState() != States.RETREAT || j.getState() != States.LOSS)) {
                                 targetEnemy = j;
                                 j.setTargeted();
@@ -399,8 +405,10 @@ public class Viking {
     // Actions
     public void action() {
         // update target
-        findTargetEnemy();
+        findTargetEnemy(2);
         updateCurrentTarget();
+
+//        System.out.println(state + ":" + inBoat);
 
         // update vectors
         vector = vector(currentLocation, currentTarget);
@@ -441,7 +449,7 @@ public class Viking {
                 attack();
                 return;
             }
-            else if (distanceFromTargetBuilding() > radius*5){
+            else if (distanceFromTargetBuilding() > radius*3.5){
                 targetEnemy.unsetTargeted();
                 targetEnemy = null;
                 currentTarget = targetBuilding.getLocation();
@@ -454,7 +462,7 @@ public class Viking {
             }
         }
 
-        // if looting // TODO: 20.01.17 when loot > max set to fight?
+        // if looting
         if (state == States.LOOTING){
             if (distanceFromTargetBuilding() <= targetBuilding.getHeight()/4  && loot < maxLoot){
                 loot += targetBuilding.removeLoot();
@@ -479,9 +487,12 @@ public class Viking {
         }
 
         if (state == States.WAITING){
+            // TODO: 21.01.17 Idle move from Kaśka
         }
         if (state == States.IDLE){
+            if (targetEnemy == null) findTargetEnemy(5);
             if (targetBuilding.getLoot() != 0 && loot == maxLoot) changeTargetBuilding();
+            updateCurrentTarget();
         }
     }
 

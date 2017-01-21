@@ -141,7 +141,7 @@ public class Boat {
         else atDestination = false;
         int counted = 0;
         for (Viking i : vikings){
-            if (i.getInBoat() || i.getState() == States.WAITING) counted++;
+            if (i.getInBoat() || i.getState() == States.WAITING || i.getState() == States.DEAD) counted++;
         }
         if (counted == vikings.size()) state = 1;
         else state = 0;

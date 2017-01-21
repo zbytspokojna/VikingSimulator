@@ -11,7 +11,7 @@ import java.awt.*;
  * Created by anka on 10.01.17.
  */
 public class Generator {
-    private Terrain mapa;
+    private Terrain map;
     private Village village;
     private Building base;
     private Fleet fleet;
@@ -19,18 +19,18 @@ public class Generator {
     private Villagers villagers;
 
     public Generator(int villageSize, Point vikingsSize, Point villagersSize){
-        mapa = new Terrain(1000,1000,1000);
-        village = new Village(mapa, villageSize);
+        map = new Terrain(1000,1000,1000);
+        village = new Village(map, villageSize);
         base = new Building(new Point(900, 900), 50, 50 ,0);
-        fleet = new Fleet(mapa, village);
-        vikings = new Vikings(mapa, village, fleet, base, vikingsSize);
-        villagers = new Villagers(mapa, village, villagersSize);
+        fleet = new Fleet(map, village);
+        vikings = new Vikings(map, village, fleet, base, vikingsSize);
+        villagers = new Villagers(map, village, villagersSize);
         vikings.setEnemies(villagers.getSquads());
         villagers.setEnemies(vikings.getSquads());
     }
 
     public void draw(Graphics g){
-        mapa.draw(g);
+        map.draw(g);
         village.draw(g);
         base.draw(g);
         fleet.draw(g);
@@ -52,5 +52,9 @@ public class Generator {
 
     public Village getVillage() {
         return village;
+    }
+
+    public Terrain getMap() {
+        return map;
     }
 }

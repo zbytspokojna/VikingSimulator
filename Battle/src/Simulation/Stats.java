@@ -86,10 +86,10 @@ public class Stats {
         for (SquadVikings i : generator.getVikings().getSquads()){
             for (Viking j : i.getVikings()){
                 vikingsHealth += j.getHealth();
-                lootOnVikings += j.getLoot();
+                if (j.getState() != States.DEAD) lootOnVikings += j.getLoot();
                 if (j.getState() == States.DEAD) vikingsDead ++;
                 else vikingsAlive ++;
-                if (j.getState() == States.RETREAT) vikingsRetreated ++;
+                if (j.getState() == States.RETREAT || j.getState() == States.LOSS || (j.getState() == States.WAITING && generator.getMap().getTerrainGrid()[j.getCurrentLocation().x][j.getCurrentLocation().y] == Colors.HILLS && generator.getVikings().getState() == States.LOSS) ) vikingsRetreated ++;
             }
         }
         switch (generator.getVikings().getState()){
@@ -112,7 +112,7 @@ public class Stats {
                 lootInVillage += j.getLoot();
                 if (j.getState() == States.DEAD) villagersDead ++;
                 else villagersAlive ++;
-                if (j.getState() == States.RETREAT) villagersRetreated ++;
+                if (j.getState() == States.RETREAT || j.getState() == States.LOSS) villagersRetreated ++;
             }
         }
 
