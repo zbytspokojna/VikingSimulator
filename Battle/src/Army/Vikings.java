@@ -13,10 +13,8 @@ public class Vikings {
     private ArrayList<SquadVikings> squads;
     private int state;
 
-    private Terrain map;
     private Village village;
     private Fleet fleet;
-    private Building base;
 
     private ArrayList<SquadVillagers> enemies;
 
@@ -30,10 +28,8 @@ public class Vikings {
         this.squads = new ArrayList<>();
         this.state = States.FIGHT;
 
-        this.map = map;
         this.village = village;
         this.fleet = fleet;
-        this.base = base;
 
         // Generating squads
         for (Building building:village.getBuildings()){
@@ -49,8 +45,7 @@ public class Vikings {
             loot += building.getLoot();
         }
         for (SquadVikings squadVikings : squads)
-            for (Viking viking : squadVikings.getVikings())
-                size ++;
+            size += squadVikings.getSize();
 
         maxLoot = (int) ceil(loot/size) + 1;
         setMaxLoot(maxLoot);
@@ -103,16 +98,15 @@ public class Vikings {
             int size = 0, alive = 0, inBoat = 0;
             for (SquadVikings i : squads) {
                 size += i.getSize();
-                if (i.getState() == States.RETREAT) {
+                if (i.getState() == States.RETREAT)
                     for (Viking j : i.getVikings()) {
                         if (j.getState() != States.DEAD) alive++;
                         if (j.getInBoat()) inBoat++;
                     }
-                }
             }
             if (inBoat == alive)
                 // loss
-                if (alive < size/2){
+                if (alive < size/2) {
                     state = States.LOSS;
                     return;
                 }

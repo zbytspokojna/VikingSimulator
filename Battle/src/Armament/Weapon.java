@@ -26,18 +26,16 @@ public class Weapon {
         g2d.fillRect((int) (location.x - size/1.4), (int) (location.y - size/1.8), (int) (size/1.1), size/5);
     }
 
+    // Getters
     public int getRange() {
         return range;
     }
-
     public int getAccuracy() {
         return accuracy;
     }
-
     public int getDamage() {
         return damage;
     }
-
     public int getPenetration() {
         return penetration;
     }

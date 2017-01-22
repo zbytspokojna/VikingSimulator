@@ -1,5 +1,7 @@
 package Simulation;
 
+import Schemes.Colors;
+
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.event.ChangeEvent;
@@ -11,7 +13,6 @@ import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
-import java.io.File;
 import java.io.IOException;
 import java.util.Random;
 import java.util.TimerTask;
@@ -31,11 +32,10 @@ public class GUI extends JFrame {
         this.getContentPane().setLayout(new CardLayout(0,0));
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
+        // Setting bounds
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
         double width = screenSize.getWidth();
-        double height = screenSize.getHeight();
-
-        this.setBounds(0, 0, 1202, 1029);
+        this.setBounds((int) ((width-1202)/2), 0, 1202, 1029);
 
         // Creating start panel
         controller = new Controller();
@@ -63,27 +63,32 @@ public class GUI extends JFrame {
         // VARIABLES
         // Informations
         final JLabel info = new JLabel("If ready press generate!");
-        info.setFont(new Font("Romain", Font.PLAIN, 20));
+        info.setFont(new Font("Romain", Font.PLAIN, 25));
         info.setHorizontalAlignment(JLabel.CENTER);
         info.setBounds(401,700,400,50);
         controller.add(info);
 
+
         // Size of village
         JLabel village = new JLabel("<html><center>Choose size<br />of the village<center></html>");
+        village.setForeground(Colors.BUILDING);
         village.setFont(new Font("Romain", Font.PLAIN, 30));
         village.setBounds(60, 300, 300, 100);
         controller.add(village);
 
         final JCheckBox villageSize1 = new JCheckBox("4 buildings");
-        villageSize1.setBounds(100,400,150,50);
+        villageSize1.setFont(new Font("Romain", Font.PLAIN, 20));
+        villageSize1.setBounds(85,400,150,50);
         controller.add(villageSize1);
 
         final JCheckBox villageSize2 = new JCheckBox("5 buildings");
-        villageSize2.setBounds(100,460,150,50);
+        villageSize2.setFont(new Font("Romain", Font.PLAIN, 20));
+        villageSize2.setBounds(85,460,150,50);
         controller.add(villageSize2);
 
         final JCheckBox villageSize3 = new JCheckBox("6 buildings BUGS!");
-        villageSize3.setBounds(100,520,150,50);
+        villageSize3.setFont(new Font("Romain", Font.PLAIN, 20));
+        villageSize3.setBounds(85,520,210,50);
         controller.add(villageSize3);
 
         ButtonGroup villageSize = new ButtonGroup();
@@ -93,31 +98,34 @@ public class GUI extends JFrame {
 
         villageSize1.setSelected(true);
 
+
         // Size of vikings squad
         JLabel vikings = new JLabel("<html><center>Choose size of<br />the viking squads<center></html>");
+        vikings.setForeground(Colors.VIKING);
         vikings.setFont(new Font("Romain", Font.PLAIN, 30));
         vikings.setBounds(451, 300, 300, 100);
         controller.add(vikings);
 
         JLabel minLabel1 = new JLabel("<html><center>Minimal<br />size of squad<center><html>");
         JLabel maxLabel1 = new JLabel("<html><center>Maximal<br />size of squad<center><html>");
-        minLabel1.setBounds(500, 420, 150, 50);
-        maxLabel1.setBounds(500, 500, 150, 50);
+        minLabel1.setBounds(480, 420, 150, 50);
+        minLabel1.setFont(new Font("Romain", Font.PLAIN, 20));
+        maxLabel1.setBounds(480, 500, 150, 50);
+        maxLabel1.setFont(new Font("Romain", Font.PLAIN, 20));
         controller.add(minLabel1);
         controller.add(maxLabel1);
 
         final JFormattedTextField minField1 = new JFormattedTextField();
         minField1.setHorizontalAlignment(JFormattedTextField.CENTER);
-        minField1.setBounds(660, 420, 50, 50);
+        minField1.setBounds(640, 420, 50, 50);
         controller.add(minField1);
         minField1.setValue(1);
 
         final JFormattedTextField maxField1 = new JFormattedTextField();
         maxField1.setHorizontalAlignment(JFormattedTextField.CENTER);
-        maxField1.setBounds(660, 500, 50, 50);
+        maxField1.setBounds(640, 500, 50, 50);
         controller.add(maxField1);
         maxField1.setValue(10);
-
 
         minField1.addPropertyChangeListener(new PropertyChangeListener() {
             @Override
@@ -160,6 +168,7 @@ public class GUI extends JFrame {
 
         // Size of villagers squad
         JLabel villagers = new JLabel("<html><center>Choose size of<br />the villager squads<center></html>");
+        villagers.setForeground(Colors.VILLAGER);
         villagers.setFont(new Font("Romain", Font.PLAIN, 30));
         villagers.setBounds(842, 300, 300, 100);
         controller.add(villagers);
@@ -182,7 +191,6 @@ public class GUI extends JFrame {
         maxField2.setBounds(1051, 500, 50, 50);
         controller.add(maxField2);
         maxField2.setValue(10);
-
 
         minField2.addPropertyChangeListener(new PropertyChangeListener() {
             @Override
@@ -353,6 +361,7 @@ public class GUI extends JFrame {
         this.setResizable(false);
     }
 
+    // Exit
     public void processWindowEvent(WindowEvent e) {
         if (e.getID() == WindowEvent.WINDOW_CLOSING) {
             this.dispose();

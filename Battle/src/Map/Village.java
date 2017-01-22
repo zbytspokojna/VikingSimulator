@@ -29,23 +29,23 @@ public class Village {
         center = new Point(0,0);
 
         // Genereating village
-        while (generated != villageSize){
+        while (generated < villageSize){
             int x = r.nextInt(map.numCols/2);
             int y = r.nextInt(map.numCols/2);
             if (map.getTerrainGrid()[x][y] == Colors.CITY) {
                 inBound = true;
-                // check if in borders of city
+                // Check if in borders of city
                 int tx,ty;
                 double angle2 = 0;
                 while (angle2 < 6.3 && inBound) {
                     tx = x + (int) (border * cos(angle2));
                     ty = y + (int) (border * sin(angle2));
-                    if(tx > 0 && ty > 0 && tx < map.numRows && ty < map.numCols)
+                    if (tx > 0 && ty > 0 && tx < map.numRows && ty < map.numCols)
                         if (map.getTerrainGrid()[tx][ty] != Colors.CITY)
                             inBound = false;
                     angle2 += 0.3;
                 }
-                // check if not on other buildings
+                // Check if not on other buildings
                 if (inBound)
                     for (Building building : buildings){
                         double radius = sqrt((building.getWidth()*building.getWidth()) + building.getHeight()*building.getHeight());
@@ -53,6 +53,7 @@ public class Village {
                         if (distanceC(x, building.getLocation().x, y, building.getLocation().y) < radius*spread)
                             inBound = false;
                     }
+                // If all ok add building to the village
                 if (inBound) {
                     buildings.add(new Building(new Point(x, y), size, size, r.nextInt(4) + 3));
                     generated++;
@@ -77,10 +78,10 @@ public class Village {
         g.fillOval(center.x, center.y, 1, 1);
     }
 
+    // Getters
     public ArrayList<Building> getBuildings() {
         return buildings;
     }
-
     public Point getCenter() {
         return center;
     }

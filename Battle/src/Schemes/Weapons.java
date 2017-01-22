@@ -3,7 +3,7 @@ package Schemes;
 import Armament.Weapon;
 
 public class Weapons {
-    //Declaration of weapons   For now values just estimated  R A D P
+    //Declaration of weapons   For now RADP just estimated
     public static final Weapon SPEAR = new Weapon(5,3,1,2);
     public static final Weapon SWORD = new Weapon(2,5,2,2);
     public static final Weapon AXE  = new Weapon(2,5,2,1);
@@ -18,3 +18,5 @@ public class Weapons {
             BOW
     };
 }
+
+// THE RADP - states of a weapon. Respectively Range, Accuracy, Damage and Piercing

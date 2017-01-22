@@ -30,7 +30,6 @@ public class Terrain {
 
         // Local variables
         Random r = new Random();
-        int n = 0;
         // List of seeds
         int[] px = new int[seeds];
         int[] py = new int[seeds];
@@ -67,7 +66,7 @@ public class Terrain {
         // Generate terrain
         for (int x = 0; x < numRows; x++) {
             for (int y = 0; y < numCols; y++) {
-                n = 0;
+                 int n = 0;
                 for (int i = 0; i < seeds; i++) {
                     if (distanceV(px[i], x, py[i], y) < distanceV(px[n], x, py[n], y)) n = i;
                 }
@@ -79,19 +78,13 @@ public class Terrain {
         for (int i = 1; i < numRows-1; i++) {
             for (int j = 1; j < numCols-1; j++) {
                 // CoastH
-                if (terrainGrid[i][j] == Colors.HILLS) {
-                    if (checkForOcean(i,j)) {
-                        Point point = new Point(i, j);
-                        coastH.add(point);
-                    }
-                }
+                if (terrainGrid[i][j] == Colors.HILLS)
+                    if (checkForOcean(i,j))
+                        coastH.add(new Point(i, j));
                 // CoastP
-                if (terrainGrid[i][j] == Colors.PLAINS) {
-                    if (checkForOcean(i,j)) {
-                        Point point = new Point(i, j);
-                        coastP.add(point);
-                    }
-                }
+                if (terrainGrid[i][j] == Colors.PLAINS)
+                    if (checkForOcean(i,j))
+                        coastP.add(new Point(i, j));
             }
         }
     }
@@ -121,11 +114,9 @@ public class Terrain {
     public Color[][] getTerrainGrid() {
         return terrainGrid;
     }
-
     public ArrayList<Point> getCoastH() {
         return coastH;
     }
-
     public ArrayList<Point> getCoastP() {
         return coastP;
     }

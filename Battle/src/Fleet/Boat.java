@@ -1,5 +1,6 @@
 package Fleet;
 
+import Colision.Direction;
 import Map.Building;
 import Schemes.*;
 import Army.*;
@@ -14,40 +15,60 @@ import static Colision.Moving.*;
 import static java.lang.Math.*;
 
 public class Boat {
+    // Dimentions
+    private int width;
+    private int length;
+
+    // Seats
     private int size;
-    private int speed;
     private ArrayList<Viking> vikings;
+
+    // Locations and targets
     private Point startLocation;
     private Point currentLocation;
     private Point previousLocation;
     private Point targetLocation;
     private Building targetBuilding;
+
+    // Moving
     private int vector;
-    private int width;
-    private int length;
+    private int direction;
+    private int tryDirection;
+    private int stuck;
+    private int speed;
+
+    // Terrain and other boats
     private Terrain map;
     private ArrayList<Boat> boats;
+
+    // States
     private int state;
-    private int direction;
     private boolean atDestination;
-    private int stuck;
+
 
     public Boat(Terrain map, Point location, int width, int length, int size, ArrayList<Boat> boats){
+        // Dimentions
+        this.width = width;
+        this.length = length;
+        // Seates
         this.size = size;
-        this.speed = 1;
         this.vikings = new ArrayList<>();
+        // Locations and targets
         this.startLocation = new Point(location);
         this.targetLocation = new Point(location);
         this.previousLocation = new Point(location);
         this.currentLocation = new Point(location);
+        this.targetLocation = new Point();
+        // Moving
         this.vector();
-        this.width = width;
-        this.length = length;
-        this.map = map;
-        this.state = 0;
-        this.boats = boats;
-        this.atDestination = false;
+        this.speed = 1;
         this.stuck = 0;
+        // Terrain and other boats
+        this.map = map;
+        this.boats = boats;
+        // States
+        this.state = 0;
+        this.atDestination = false;
     }
 
     // Setters
@@ -66,13 +87,10 @@ public class Boat {
                 if (tx - length/interval > 0 && ty-length/interval > 0 && tx < map.numRows && ty < map.numCols){
                     // checking for terrain
                     noColision = true;
-                    double angle2 = 0;
-                    while (angle2 < 6.3 && noColision) {
-                        if (map.getTerrainGrid()[tx + (int) (length/1.9 * cos(angle2))][ty + (int) (length/1.9 * sin(angle2))] != Colors.OCEAN || map.getTerrainGrid()[tx + (int) (length/4 * cos(angle2))][ty + (int) (length/4 * sin(angle2))] != Colors.OCEAN) {
+                    for (double angle2 = 0; angle2 < 6.3 && noColision; angle2 += 0.3)
+                        if (map.getTerrainGrid()[tx + (int) (length/1.9 * cos(angle2))][ty + (int) (length/1.9 * sin(angle2))] != Colors.OCEAN || map.getTerrainGrid()[tx + (int) (length/4 * cos(angle2))][ty + (int) (length/4 * sin(angle2))] != Colors.OCEAN)
                             noColision = false;
-                        }
-                        angle2 += 0.3;
-                    }
+                    // if no colision detected
                     if (noColision){
                         this.targetLocation.x = tx;
                         this.targetLocation.y = ty;
@@ -89,43 +107,30 @@ public class Boat {
     public int getWidth() {
         return width;
     }
-
     public int getLength() {
         return length;
     }
-
     public int getState() {
         return state;
     }
-
     public Point getCurrentLocation() {
         return currentLocation;
     }
-
     public Building getTargetBuilding() {
         return targetBuilding;
     }
-
     public int getSize() {
         return size;
     }
-
     public ArrayList<Viking> getVikings() {
         return vikings;
     }
-
     public Point getTargetLocation() {
         return targetLocation;
     }
-
     public int getDirection() {
         return direction;
     }
-
-    public Point getStartLocation() {
-        return startLocation;
-    }
-
 
     // OTHER FUNCTIONS
     public void returnToBase() {
@@ -140,22 +145,32 @@ public class Boat {
         if (currentLocation.x == targetLocation.x && currentLocation.y == targetLocation.y) atDestination = true;
         else atDestination = false;
         int counted = 0;
-        for (Viking i : vikings){
+        for (Viking i : vikings)
             if (i.getInBoat() || i.getState() == States.WAITING || i.getState() == States.DEAD) counted++;
-        }
         if (counted == vikings.size()) state = 1;
         else state = 0;
     }
 
+    private boolean allDead(){
+        int allDead = 0;
+        for (Viking viking : vikings)
+            if (viking.getState() == States.DEAD)
+                allDead++;
+        if (allDead == vikings.size())
+            return true;
+        else
+            return false;
+    }
 
     // MOVING
+    // Calculate vector
     private void vector(){
         vector = -(int) (atan2(currentLocation.x - targetLocation.x, currentLocation.y - targetLocation.y)*(180/PI));
         direction = direction(vector);
     }
 
     public void move() {
-        if (currentLocation.x != targetLocation.x || currentLocation.y != targetLocation.y) {
+        if ((currentLocation.x != targetLocation.x || currentLocation.y != targetLocation.y) && vikings.size() > 0 && !allDead()) {
             this.vector();
 
             if (direction == Directions.UP) {
@@ -203,6 +218,7 @@ public class Boat {
         }
     }
 
+    // Check for boats
     private boolean checkB() {
         for (Boat i:boats) {
             if (i != this) {
@@ -213,7 +229,7 @@ public class Boat {
         }
         return true;
     }
-
+    // Check the map
     private boolean checkM(){
         double interval = 2.5;
         // Is in previous location
@@ -230,17 +246,17 @@ public class Boat {
         }
         return true;
     }
-
+    // Check
     private boolean check(){
         return (checkM() && checkB());
     }
-
+    // Change previous location
     private void setPreviousLocation(int x, int y){
         previousLocation.x = x;
         previousLocation.y = y;
     }
 
-
+    // good for going to Plains bad for comming back
     private boolean Left() {
         int x = currentLocation.x;
         int y = currentLocation.y;
@@ -312,8 +328,7 @@ public class Boat {
         return true;
     }
 
-
-
+    // still to make better
     private boolean Right() {
         int x = currentLocation.x;
         int y = currentLocation.y;
@@ -358,6 +373,7 @@ public class Boat {
 
 
     private boolean tryUp(int x, int y){
+        tryDirection = Directions.UP;
         moveUp(currentLocation);
         if (check()) {
             setPreviousLocation(x,y);
@@ -368,6 +384,7 @@ public class Boat {
     }
 
     private boolean tryDown(int x, int y){
+        tryDirection = Directions.DOWN;
         moveDown(currentLocation);
         if (check()) {
             setPreviousLocation(x,y);
@@ -378,6 +395,7 @@ public class Boat {
     }
 
     private boolean tryLeft(int x, int y){
+        tryDirection = Directions.LEFT;
         moveLeft(currentLocation);
         if (check()) {
             setPreviousLocation(x,y);
@@ -388,6 +406,7 @@ public class Boat {
     }
 
     private boolean tryRight(int x, int y){
+        tryDirection = Directions.RIGHT;
         moveRight(currentLocation);
         if (check()) {
             setPreviousLocation(x,y);
@@ -398,6 +417,7 @@ public class Boat {
     }
 
     private boolean tryUpLeft(int x, int y){
+        tryDirection = Directions.UPLEFT;
         moveUpLeft(currentLocation);
         if (check()) {
             setPreviousLocation(x,y);
@@ -408,6 +428,7 @@ public class Boat {
     }
 
     private boolean tryUpRight(int x, int y){
+        tryDirection = Directions.UPRIGHT;
         moveUpRight(currentLocation);
         if (check()) {
             setPreviousLocation(x,y);
@@ -418,6 +439,7 @@ public class Boat {
     }
 
     private boolean tryDownLeft(int x, int y){
+        tryDirection = Directions.DOWNLEFT;
         moveDownLeft(currentLocation);
         if (check()) {
             setPreviousLocation(x,y);
@@ -428,6 +450,7 @@ public class Boat {
     }
 
     private boolean tryDownRight(int x, int y){
+        tryDirection = Directions.DOWNRIGHT;
         moveDownRight(currentLocation);
         if (check()) {
             setPreviousLocation(x,y);

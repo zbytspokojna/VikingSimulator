@@ -6,7 +6,7 @@ import java.awt.*;
  * Created by anka on 18.01.17.
  */
 public class Moving {
-
+    // Changing location based on direction
     public static void moveUp(Point currentLocation){
         currentLocation.y -= 1;
     }

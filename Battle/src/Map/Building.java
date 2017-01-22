@@ -33,7 +33,7 @@ public class Building  {
     public void draw(Graphics g) {
         Graphics2D g2d = (Graphics2D) g.create();
         // Building
-        g2d.setColor(Colors.BUILDINGS);
+        g2d.setColor(Colors.BUILDING);
         g2d.rotate(Math.toRadians(rotation), location.x, location.y);
         g2d.fillRect(location.x - width/2, location.y - height/2, width, height);
         // Center
@@ -45,18 +45,16 @@ public class Building  {
 
     }
 
+    // Getters
     public Point getLocation() {
         return location;
     }
-
     public int getWidth() {
         return width;
     }
-
     public int getHeight() {
         return height;
     }
-
     public int getLoot() {
         return loot;
     }

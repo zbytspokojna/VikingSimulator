@@ -4,7 +4,6 @@ import javax.swing.*;
 import java.awt.*;
 
 public class Simulator extends JPanel {
-    JPanel simulator;
 
     private Generator generator;
     private Stats stats;
@@ -13,10 +12,10 @@ public class Simulator extends JPanel {
 
     public Simulator(int villageSize, Point vikingsSize, Point villagersSize){
         this.state = false;
-        this.simulator = new JPanel();
+        this.queue = 0;
+
         this.generator = new Generator(villageSize,vikingsSize,villagersSize);
         this.stats = new Stats(generator);
-        this.queue = 0;
     }
 
     public void simulation(){
@@ -24,20 +23,20 @@ public class Simulator extends JPanel {
             if (queue == 0) {
                 generator.getVikings().action();
                 generator.getVillagers().action();
+                stats.estimate();
                 queue = 1;
             }
             else {
                 generator.getVillagers().action();
                 generator.getVikings().action();
+                stats.estimate();
                 queue = 0;
             }
-                stats.estimate();
         }
     }
 
     @Override
     public void paintComponent(Graphics g) {
-        // Important to call super class method
         super.paintComponent(g);
         generator.draw(g);
         stats.draw(g);
@@ -45,14 +44,9 @@ public class Simulator extends JPanel {
     }
 
     // Getters and setters
-    public Generator getGenerator() {
-        return generator;
-    }
-
     public void setState(boolean state) {
         this.state = state;
     }
-
     public boolean getState() {
         return state;
     }

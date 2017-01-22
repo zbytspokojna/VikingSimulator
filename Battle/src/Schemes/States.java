@@ -4,6 +4,7 @@ package Schemes;
  * Created by anka on 17.01.17.
  */
 public class States {
+    // Declaration of possible states of an army, squad or warrior
     public static final int DEAD = 0;
     public static final int FIGHT = 1;
     public static final int RETREAT = 2;

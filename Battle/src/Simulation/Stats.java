@@ -32,6 +32,7 @@ public class Stats {
 
     public Stats(Generator generator) {
         this.generator = generator;
+        // Vikings
         vikingsHealth = 0;
         vikingsAlive = 0;
         vikingsDead = 0;
@@ -43,15 +44,9 @@ public class Stats {
                 vikingsHealth += j.getHealth();
             }
         }
-        switch (generator.getVikings().getState()){
-            case States.LOSS : vikingsState = "Loss";
-                break;
-            case States.WIN : vikingsState = "Win";
-                break;
-            case States.FIGHT : vikingsState = "Fighting";
-                break;
-        }
+        vikingsState = "Fighting";
 
+        // Villagers
         villagersHealth = 0;
         villagersAlive = 0;
         villagersDead = 0;
@@ -63,21 +58,11 @@ public class Stats {
                 villagersHealth += j.getHealth();
             }
         }
-
-        for (Building i : generator.getVillage().getBuildings()){
-            lootInVillage += i.getLoot();
-        }
-        switch (generator.getVillagers().getState()){
-            case States.LOSS : villagersState = "Loss";
-                break;
-            case States.WIN : villagersState = "Win";
-                break;
-            case States.FIGHT : villagersState = "Fighting";
-                break;
-        }
+        villagersState = "Fighting";
     }
 
     public void estimate(){
+        // Vikings
         vikingsHealth = 0;
         vikingsAlive = 0;
         vikingsDead = 0;
@@ -86,21 +71,15 @@ public class Stats {
         for (SquadVikings i : generator.getVikings().getSquads()){
             for (Viking j : i.getVikings()){
                 vikingsHealth += j.getHealth();
-                if (j.getState() != States.DEAD) lootOnVikings += j.getLoot();
+                lootOnVikings += j.getLoot();
                 if (j.getState() == States.DEAD) vikingsDead ++;
                 else vikingsAlive ++;
                 if (j.getState() == States.RETREAT || j.getState() == States.LOSS || (j.getState() == States.WAITING && generator.getMap().getTerrainGrid()[j.getCurrentLocation().x][j.getCurrentLocation().y] == Colors.HILLS && generator.getVikings().getState() == States.LOSS) ) vikingsRetreated ++;
             }
         }
-        switch (generator.getVikings().getState()){
-            case States.LOSS : vikingsState = "Loss";
-                break;
-            case States.WIN : vikingsState = "Win";
-                break;
-            case States.FIGHT : vikingsState = "Fighting";
-                break;
-        }
+        vikingsState = setStateString (generator.getVikings().getState());
 
+        // Villagers
         villagersHealth = 0;
         villagersAlive = 0;
         villagersDead = 0;
@@ -119,16 +98,19 @@ public class Stats {
         for (Building i : generator.getVillage().getBuildings()){
             lootInVillage += i.getLoot();
         }
-        switch (generator.getVillagers().getState()){
-            case States.LOSS : villagersState = "Loss";
-                break;
-            case States.WIN : villagersState = "Win";
-                break;
-            case States.FIGHT : villagersState = "Fighting";
-                break;
-        }
+        villagersState = setStateString (generator.getVillagers().getState());
     }
 
+    public String setStateString(int state){
+        switch (state){
+            case States.LOSS : return  "Loss";
+            case States.WIN : return  "Win";
+            case States.FIGHT : return "Fighting";
+        }
+        return null;
+    }
+
+    // Drawing
     public void draw(Graphics g){
         g.setFont(new Font("TimesRoman", Font.BOLD, 25));
         g.setColor(Colors.VIKING);

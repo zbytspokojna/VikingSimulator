@@ -14,8 +14,7 @@ public class Shield {
     Random r = new Random();
     private int defense = r.nextInt(2) + 1;
 
-    public Shield(){
-    }
+    public Shield(){}
 
     public void draw(Graphics g, Point location, int size, int vector){
         Graphics2D g2d = (Graphics2D) g.create();

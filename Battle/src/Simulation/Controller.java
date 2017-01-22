@@ -11,27 +11,24 @@ public class Controller extends JPanel {
     private Point Vikings = new Point();
     private Point Villagers = new Point();
 
-
+    // Getters
     public int getVillage() {
         return Village;
     }
-
     public Point getVikings() {
         return Vikings;
     }
-
     public Point getVillagers() {
         return Villagers;
     }
 
+    // Setters
     public void setVillage(int village) {
         Village = village;
     }
-
     public void setVikings(Point vikings) {
         Vikings = vikings;
     }
-
     public void setVillagers(Point villagers) {
         Villagers = villagers;
     }

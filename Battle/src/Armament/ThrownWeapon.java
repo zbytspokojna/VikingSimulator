@@ -10,6 +10,5 @@ public class ThrownWeapon {
     private int damage = 0;
     private int penetration = 0;
 
-    public ThrownWeapon(){
-    }
+    public ThrownWeapon(){}
 }

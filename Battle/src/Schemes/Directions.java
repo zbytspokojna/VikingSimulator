@@ -4,6 +4,7 @@ package Schemes;
  * Created by anka on 17.01.17.
  */
 public class Directions {
+    // Deklaration of directions for movements
     public static final int UP = 1;
     public static final int LEFT = 2;
     public static final int DOWN = 3;

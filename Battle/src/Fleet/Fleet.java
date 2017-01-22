@@ -16,12 +16,16 @@ public class Fleet {
     private ArrayList<Boat> boats;
     private ArrayList<Target> targets;
     private Terrain map;
-    private int state;                  // 0-waiting, 1-swimming
+    private boolean ready;
 
     // Constructor
-    public Fleet(Terrain map, Village village) {
+    public Fleet(Terrain map, Village village, Point vikingsMinMax) {
         // Variables for generating
-        int number = 2;                                         // number of boats per building
+        int number;                                             // number of boats per building
+        if (vikingsMinMax.y <= 5)
+            number = 1;
+        else
+            number = 2;
         int width = map.numCols / 130;                          // width of a boat
         int length = 5 * map.numCols / 140;                     // length of a boat/number of seats -- now 5
         int amount = village.getBuildings().size() * number;    // amount of boats
@@ -30,7 +34,7 @@ public class Fleet {
         this.boats = new ArrayList<>();
         this.targets = new ArrayList<>();
         this.map = map;
-        this.state = 0;
+        this.ready = false;
 
         // Generating boats
         Point location = new Point();
@@ -46,22 +50,20 @@ public class Fleet {
             double interval = 1.8;                              //base interval from coast and frame
 
             for (double k = interval; k > 1.4; k -= 0.1) {
-                double angle = 0;
-                double radius = length/k;
+                double angle = 0, radius = length/k;
                 noColision = false;
                     // generating points in certain radius
                     while (angle < 6.3 && !noColision) {
                         tx = location.x - (int) (radius * cos(angle));
                         ty = location.y - (int) (radius * sin(angle));
-                        // if not outside the borders
+                        // if not outside the borders and away from them by 1.5 of its length
                         if (tx - length*1.5 > 0 && ty - length*1.5 > 0 && tx + length*1.5 < map.numRows && ty + length*1.5 < map.numCols) {
                             // checking for terrain
                             noColision = true;
                             double angle2 = 0;
                             while (angle2 < 6.3 && noColision) {
-                                if (map.getTerrainGrid()[tx + (int) (length/2 * cos(angle2))][ty + (int) (length/2 * sin(angle2))] != Colors.OCEAN || map.getTerrainGrid()[tx + (int) (length/4 * cos(angle2))][ty + (int) (length/4 * sin(angle2))] != Colors.OCEAN) {
+                                if (map.getTerrainGrid()[tx + (int) (length/1.9 * cos(angle2))][ty + (int) (length/1.9 * sin(angle2))] != Colors.OCEAN || map.getTerrainGrid()[tx + (int) (length/4 * cos(angle2))][ty + (int) (length/4 * sin(angle2))] != Colors.OCEAN)
                                     noColision = false;
-                                }
                                 angle2 += 0.3;
                             }
                             // checking for boats
@@ -71,9 +73,8 @@ public class Fleet {
 
                                 for (Boat j : boats) {
                                     double distance = distanceC((tx + (width / 2)), (j.getCurrentLocation().x + (j.getWidth() / 2)), (ty + (length / 2)), (j.getCurrentLocation().y + (j.getLength() / 2)));
-                                    if (distance < length * spread) {
+                                    if (distance < length * spread)
                                         noColision = false;
-                                    }
                                     if (!noColision) break;
                                 }
                             }
@@ -102,7 +103,7 @@ public class Fleet {
         for (Building i : village.getBuildings()) {
             Point building = new Point(i.getLocation().x, i.getLocation().y);
             int targeted = 0;
-            while (targeted < 2) {
+            while (targeted < number) {
                 int min = Integer.MAX_VALUE;
                 for (Point coast : map.getCoastP()) {
                     // distance from building
@@ -110,12 +111,9 @@ public class Fleet {
                     if (distance < min){
                         // distance from other targets
                         noColision = true;
-                        //if (!distanceM(coast, length)) noColision = false;
-                        for (Target t:targets) {
-                            if (distanceC(t.getTarget().x, coast.x, t.getTarget().y, coast.y) < length*spread){
+                        for (Target t:targets)
+                            if (distanceC(t.getTarget().x, coast.x, t.getTarget().y, coast.y) < length*spread)
                                 noColision = false;
-                            }
-                        }
                         // setting new mininum and set target;
                         if (noColision) {
                             min = (int) distance;
@@ -129,11 +127,12 @@ public class Fleet {
             }
         }
 
-        // Giving boats targets -- temporary function for checking -- may leave it not so bad :)
+        // Giving boats targets
             for (int i = 0; i < boats.size(); i++) {
                 boats.get(i).setTarget(targets.get(i));
                 targets.get(i).use();
             }
+        // TODO: 22.01.17 it is not always generating all of them
         System.out.println(generated + ":" + amount);
     }
 
@@ -144,43 +143,39 @@ public class Fleet {
 
     // OTHER FUNTIONS
     public void returnToBase() {
-        for (Boat i : boats){
+        for (Boat i : boats)
             i.returnToBase();
-        }
     }
 
+    // State
     public void estimateState(){
-        int ready = 0, size = 0, onLand = 0;
-
-        // If viking is set to on boat but is onLand
+        // Variables
+        int boatsReady = 0, size = 0, onLand = 0;
+        // If viking is set to on boat but is on land
         for (Boat i : boats){
             i.estimateState();
-            if (i.getState() == 1) ready++;
+            if (i.getState() == 1) boatsReady++;
 
             size += i.getVikings().size();
-            for (Viking j : i.getVikings()){
-                if (j.onLand()) onLand++;
-            }
+            for (Viking j : i.getVikings())
+                if (j.getState() == States.WAITING || j.getState() == States.DEAD) onLand++;
         }
-
         // If all vikings are onLand we set them to fight ect
         if (onLand == size){
-            state = 0;
+            ready = false;
             for (Boat i : boats)
                 for (Viking j : i.getVikings())
                     j.setFighting();
             return;
         }
-
         // If not all onLand keep going
-        if (ready == boats.size() && onLand != size) state = 1;
-        else state = 0;
+        if (boatsReady == boats.size() && onLand != size) ready = true;
+        else ready = false;
     }
     
     public void action(){
-        if (state == 1){
+        if (ready == true)
             for (Boat i : boats) i.move();
-        }
     }
 
     // Drawing

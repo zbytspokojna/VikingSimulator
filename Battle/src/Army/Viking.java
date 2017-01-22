@@ -271,7 +271,6 @@ public class Viking {
         return moral > moralThreshold;
     }
 
-
     // State
     public void estimateState() {
         // No matter what state check if not dead or retreated
@@ -311,12 +310,6 @@ public class Viking {
                 }
         }
     }
-
-    public boolean onLand() {
-        estimateState();
-        return (state == States.WAITING || state == States.DEAD);
-    }
-
 
     // Updating currentTarget based on state
     private void updateCurrentTarget(){
@@ -449,7 +442,7 @@ public class Viking {
                 attack();
                 return;
             }
-            else if (distanceFromTargetBuilding() > radius*3.5){
+            else if (distanceFromTargetBuilding() > radius*3){
                 targetEnemy.unsetTargeted();
                 targetEnemy = null;
                 currentTarget = targetBuilding.getLocation();
@@ -464,7 +457,7 @@ public class Viking {
 
         // if looting
         if (state == States.LOOTING){
-            if (distanceFromTargetBuilding() <= targetBuilding.getHeight()/4  && loot < maxLoot){
+            if (distanceFromTargetBuilding() <= targetBuilding.getHeight()/5){
                 loot += targetBuilding.removeLoot();
                 return;
             }

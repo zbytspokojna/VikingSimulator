@@ -20,9 +20,7 @@ public class SquadVikings {
     private int state;
 
     // Map information
-    private Terrain map;
     private Village village;
-    private Fleet fleet;
     private Building base;
 
     // Other agents
@@ -44,9 +42,7 @@ public class SquadVikings {
         this.state = States.FIGHT;
 
         // Map information
-        this.map = map;
         this.village = village;
-        this.fleet = fleet;
         this.base = base;
 
         // Other agents
@@ -92,33 +88,27 @@ public class SquadVikings {
         }
     }
 
-
     // Setters
     public void setEnemies(ArrayList<SquadVillagers> enemies) {
         this.enemies = enemies;
-        for (Viking i : vikings){
+        for (Viking i : vikings)
             i.setEnemies(enemies);
-        }
     }
-
     public void setLoss() {
         if (state != States.DEAD) state = States.LOSS;
         for (Viking i : vikings)
             i.setLoss();
     }
-
     public void setWin() {
         if (state != States.DEAD) state = States.WIN;
         for (Viking i : vikings)
             i.setWin();
     }
-
     public void setReAttack() {
         if (state != States.DEAD) state = States.FIGHT;
         for (Viking i : vikings)
             i.setReAttack();
     }
-
     public void setMaxLoot(int maxLoot){
         for (Viking i : vikings)
             i.setMaxLoot(maxLoot);
@@ -128,24 +118,20 @@ public class SquadVikings {
     public int getState() {
         return state;
     }
-
     public ArrayList<Viking> getVikings() {
         return vikings;
     }
-
     public int getSize() {
         return size;
     }
 
 
     // OTHERS FUNCTIONS
-
     // State
     public void estimateState(){
         // Update state of squads
-        for (Viking i : vikings) {
+        for (Viking i : vikings)
             i.estimateState();
-        }
 
         int dead = 0, retreated = 0, fighting = 0;
         switch (state){
@@ -176,7 +162,7 @@ public class SquadVikings {
     // Updates
     public void updateTargetLocation(){
         boolean found = false;
-        if (target.getLoot() == 0){
+        if (target.getLoot() == 0)
             for (Building i : village.getBuildings()){
                 if (i.getLoot() != 0){
                     target = i;
@@ -188,7 +174,6 @@ public class SquadVikings {
                 }
                 if (found) break;
             }
-        }
     }
 
     public void action() {
@@ -229,7 +214,6 @@ public class SquadVikings {
 
         for (Viking i : vikings) i.action();
     }
-
 
     // Drawing
     public void draw(Graphics g) {

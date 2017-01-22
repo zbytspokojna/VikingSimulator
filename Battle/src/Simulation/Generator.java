@@ -22,13 +22,14 @@ public class Generator {
         map = new Terrain(1000,1000,1000);
         village = new Village(map, villageSize);
         base = new Building(new Point(900, 900), 50, 50 ,0);
-        fleet = new Fleet(map, village);
+        fleet = new Fleet(map, village, vikingsSize);
         vikings = new Vikings(map, village, fleet, base, vikingsSize);
         villagers = new Villagers(map, village, villagersSize);
         vikings.setEnemies(villagers.getSquads());
         villagers.setEnemies(vikings.getSquads());
     }
 
+    // Drawing
     public void draw(Graphics g){
         map.draw(g);
         village.draw(g);
@@ -38,22 +39,16 @@ public class Generator {
         villagers.draw(g);
     }
 
-    public Fleet getFleet() {
-        return fleet;
-    }
-
+    // Getters
     public Vikings getVikings() {
         return vikings;
     }
-
     public Villagers getVillagers() {
         return villagers;
     }
-
     public Village getVillage() {
         return village;
     }
-
     public Terrain getMap() {
         return map;
     }
