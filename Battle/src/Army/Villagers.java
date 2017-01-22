@@ -75,24 +75,23 @@ public class Villagers {
             int size = 0, alive = 0, inForest = 0;
             for (SquadVillagers i : squads) {
                 size += i.getSize();
-                if (i.getState() == States.RETREAT) {
+                if (i.getState() == States.RETREAT)
                     for (Villager j : i.getVillagers()) {
                         if (j.getState() != States.DEAD) alive++;
                         if (j.getInForest()) inForest++;
                     }
-                }
             }
-            if (inForest == alive)
-                if (alive < size/2){
+            if (inForest == alive) {
+                if (alive < size / 2) {
                     state = States.LOSS;
                     return;
-                }
-                else {
+                } else {
                     state = States.FIGHT;
                     for (SquadVillagers i : squads)
                         i.setReAttack();
                     return;
                 }
+            }
         }
 
         // Winning statement

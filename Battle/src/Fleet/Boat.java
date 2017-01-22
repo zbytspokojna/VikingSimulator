@@ -142,8 +142,10 @@ public class Boat {
     }
 
     public void estimateState(){
-        if (currentLocation.x == targetLocation.x && currentLocation.y == targetLocation.y) atDestination = true;
-        else atDestination = false;
+        if ((currentLocation.x == targetLocation.x && currentLocation.y == targetLocation.y) ||(currentLocation.x == startLocation.x && currentLocation.y == startLocation.y) )
+            atDestination = true;
+        else
+            atDestination = false;
         int counted = 0;
         for (Viking i : vikings)
             if (i.getInBoat() || i.getState() == States.WAITING || i.getState() == States.DEAD) counted++;
@@ -218,7 +220,6 @@ public class Boat {
         }
     }
 
-    // Check for boats
     private boolean checkB() {
         for (Boat i:boats) {
             if (i != this) {
@@ -229,7 +230,6 @@ public class Boat {
         }
         return true;
     }
-    // Check the map
     private boolean checkM(){
         double interval = 2.5;
         // Is in previous location
@@ -246,11 +246,10 @@ public class Boat {
         }
         return true;
     }
-    // Check
     private boolean check(){
         return (checkM() && checkB());
     }
-    // Change previous location
+
     private void setPreviousLocation(int x, int y){
         previousLocation.x = x;
         previousLocation.y = y;
@@ -268,7 +267,6 @@ public class Boat {
                             return false;
         return true;
     }
-
     private boolean UpLeft() {
         int x = currentLocation.x;
         int y = currentLocation.y;
@@ -291,7 +289,6 @@ public class Boat {
             return true;
         }
     }
-
     private boolean DownLeft() {
         int x = currentLocation.x;
         int y = currentLocation.y;
@@ -303,7 +300,6 @@ public class Boat {
                             return false;
         return true;
     }
-
     private boolean Up() {
         int x = currentLocation.x;
         int y = currentLocation.y;
@@ -315,7 +311,6 @@ public class Boat {
                             return false;
         return true;
     }
-
     private boolean UpRight() {
         int x = currentLocation.x;
         int y = currentLocation.y;
@@ -342,7 +337,6 @@ public class Boat {
                                         return false;
         return true;
     }
-
     private boolean Down() {
         int x = currentLocation.x;
         int y = currentLocation.y;
@@ -356,7 +350,6 @@ public class Boat {
                                         return false;
         return true;
     }
-
     private boolean DownRight() {
         int x = currentLocation.x;
         int y = currentLocation.y;
@@ -371,7 +364,6 @@ public class Boat {
         return true;
     }
 
-
     private boolean tryUp(int x, int y){
         tryDirection = Directions.UP;
         moveUp(currentLocation);
@@ -382,7 +374,6 @@ public class Boat {
         moveDown(currentLocation);
         return false;
     }
-
     private boolean tryDown(int x, int y){
         tryDirection = Directions.DOWN;
         moveDown(currentLocation);
@@ -393,7 +384,6 @@ public class Boat {
         moveUp(currentLocation);
         return false;
     }
-
     private boolean tryLeft(int x, int y){
         tryDirection = Directions.LEFT;
         moveLeft(currentLocation);
@@ -404,7 +394,6 @@ public class Boat {
         moveRight(currentLocation);
         return false;
     }
-
     private boolean tryRight(int x, int y){
         tryDirection = Directions.RIGHT;
         moveRight(currentLocation);
@@ -415,7 +404,6 @@ public class Boat {
         moveLeft(currentLocation);
         return false;
     }
-
     private boolean tryUpLeft(int x, int y){
         tryDirection = Directions.UPLEFT;
         moveUpLeft(currentLocation);
@@ -426,7 +414,6 @@ public class Boat {
         moveDownRight(currentLocation);
         return false;
     }
-
     private boolean tryUpRight(int x, int y){
         tryDirection = Directions.UPRIGHT;
         moveUpRight(currentLocation);
@@ -437,7 +424,6 @@ public class Boat {
         moveDownLeft(currentLocation);
         return false;
     }
-
     private boolean tryDownLeft(int x, int y){
         tryDirection = Directions.DOWNLEFT;
         moveDownLeft(currentLocation);
@@ -448,7 +434,6 @@ public class Boat {
         moveUpRight(currentLocation);
         return false;
     }
-
     private boolean tryDownRight(int x, int y){
         tryDirection = Directions.DOWNRIGHT;
         moveDownRight(currentLocation);

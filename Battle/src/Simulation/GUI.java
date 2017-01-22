@@ -269,7 +269,7 @@ public class GUI extends JFrame {
         // Start button
         final JButton startButton = new JButton("GENERATE");
         startButton.setFont(new Font("Romain", Font.BOLD, 50));
-        startButton.setBounds(75,800,1052,100);
+        startButton.setBounds(75,100,1052,100);
         controller.add(startButton);
         startButton.addActionListener(new ActionListener() {
             @Override

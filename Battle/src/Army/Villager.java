@@ -121,68 +121,67 @@ public class Villager {
     public void setEnemies(ArrayList<SquadVikings> enemies) {
         this.enemies = enemies;
     }
-
     public void setTargetBuilding(Building targetBuilding) {
         this.targetBuilding = targetBuilding;
     }
 
+    // Changing states
     public void setWin() {
         if (state != States.DEAD)
             state = States.WIN;
         moral = 100;
     }
-
     public void setLoss() {
         if (state != States.DEAD)
             state = States.LOSS;
         moral = 100;
     }
-
     public void setReAttack() {
         if (state != States.DEAD) {
             state = States.FIGHT;
             moral = 100;
         }
     }
-
     public void setFighting() {
         if (state != States.DEAD && state != States.LOSS && state != States.WIN && state != States.RETREAT)
             state = States.FIGHT;
     }
 
+    // Changing targeted and moral
     public void setTargeted() {
         targeted ++;
     }
-
     public void unsetTargeted() {
         targeted--;
+    }
+    public void increaseMoral(double increase) {
+        moral += increase;
+        if (moral > 100) moral = 100;
+    }
+    public void decreaseMoral(double decrease) {
+        moral -= decrease;
+        if (moral < 0) moral= 0;
     }
 
     // Getters
     public Point getCurrentLocation() {
         return currentLocation;
     }
-
     public int getState() {
         return state;
     }
-
     public int getHealth() {
         return health;
     }
-
     public int getLoot() {
         return loot;
     }
-
     public int getTargeted() {
         return targeted;
     }
-
     public int getDodge() {
         return dodge;
     }
-
     public boolean getInForest() {
         return inForest;
     }
@@ -212,7 +211,6 @@ public class Villager {
             if (state == States.RETREAT) increaseMoral(0.01);
         }
     }
-
     private boolean moralCheck(){
         updateMoral();
         return moral > moralThreshold;
@@ -229,6 +227,8 @@ public class Villager {
             state = States.RETREAT;
             return;
         }
+        inForest = map.getTerrainGrid()[currentLocation.x][currentLocation.y] == Colors.FOREST;
+
         switch (state){
             case States.WIN:
                 break;
@@ -272,7 +272,6 @@ public class Villager {
                 currentTarget = targetBuilding.getLocation();
         }
     }
-
     public void findTargetEnemy() {
         boolean found = false;
         // If fighting or idling find target
@@ -309,10 +308,10 @@ public class Villager {
     private double distanceFromTargetBuilding(){
         return distanceC(currentLocation.x, targetBuilding.getLocation().x, currentLocation.y, targetBuilding.getLocation().y);
     }
-
     private double distanceFromTargetEnemy() {
         return distanceC(currentLocation.x, targetEnemy.getCurrentLocation().x, currentLocation.y, targetEnemy.getCurrentLocation().y);
     }
+
 
     public void action() {
         // update target
@@ -359,10 +358,12 @@ public class Villager {
 
         // If going to the forest
         if (state == States.RETREAT){
-            if (map.getTerrainGrid()[currentLocation.x][currentLocation.y] == Colors.FOREST)
-                inForest = true;
-            move();
-            return;
+            if (currentLocation.x == currentTarget.x && currentLocation.y == currentTarget.y)
+                return;
+            else {
+                move();
+                return;
+            }
         }
 
         // If battle is done
@@ -391,7 +392,6 @@ public class Villager {
     private void dropLoot() {
         loot = 0;
     }
-
     private void attack() {
         Random r = new Random();
         if (r.nextInt(101) <= accuracy + primeWeapon.getAccuracy()){
@@ -426,15 +426,7 @@ public class Villager {
             color = new Color(color.getRed(), color.getGreen() + (damage-def)*2 , color.getBlue() + (damage-def)*2);
     }
 
-    public void increaseMoral(double increase) {
-        moral += increase;
-        if (moral > 100) moral = 100;
-    }
 
-    public void decreaseMoral(double decrease) {
-        moral -= decrease;
-        if (moral < 0) moral= 0;
-    }
 
 
     // MOVING TEMP!!!

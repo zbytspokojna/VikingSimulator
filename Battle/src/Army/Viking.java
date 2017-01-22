@@ -59,6 +59,7 @@ public class Viking {
     private Village village;
     private Fleet fleet;
     private Building base;
+    private Loot lostLoot;
 
     // Other agents
     private ArrayList<SquadVikings> allies;
@@ -115,6 +116,7 @@ public class Viking {
         this.village = village;
         this.fleet = fleet;
         this.base = base;
+        this.lostLoot = null;
 
         // Other agents
         this.allies = allies;
@@ -145,11 +147,9 @@ public class Viking {
     public void setEnemies(ArrayList<SquadVillagers> enemies) {
         this.enemies = enemies;
     }
-
     public void setTargetBuilding(Building targetBuilding) {
         this.targetBuilding = targetBuilding;
     }
-
     public void setMaxLoot(int maxLoot){
         this.maxLoot = maxLoot;
     }
@@ -162,43 +162,45 @@ public class Viking {
         }
         else return false;
     }
-
     public void unsetLooting() {
         if (state == States.LOOTING)
             state = States.FIGHT;
     }
-
     public void setLoss() {
         if (state != States.DEAD && state != States.WAITING)
             state = States.LOSS;
         moral = 100;
     }
-
     public void setWin() {
         if (state != States.DEAD && state != States.WAITING)
             state = States.WIN;
         moral = 100;
     }
-
     public void setReAttack() {
         if (state != States.DEAD) {
             state = States.FIGHT;
             moral = 100;
         }
     }
-
     public void setFighting() {
         if (state != States.DEAD && state != States.LOSS && state != States.WIN && state != States.RETREAT)
             state = States.FIGHT;
     }
 
-    // Changing state of being targeted
+    // Changing targeted and moral
     public void setTargeted() {
         targeted ++;
     }
-
     public void unsetTargeted() {
         targeted--;
+    }
+    public void increaseMoral(double increase) {
+        moral += increase;
+        if (moral > 100) moral = 100;
+    }
+    public void decreaseMoral(double decrease) {
+        moral -= decrease;
+        if (moral < 0) moral= 0;
     }
 
 
@@ -206,35 +208,21 @@ public class Viking {
     public Point getCurrentLocation() {
         return currentLocation;
     }
-
     public int getState() {
         return state;
     }
-
     public int getHealth() {
         return health;
     }
-
     public int getLoot() {
         return loot;
     }
-
-    public Boat getTargetBoat() {
-        return targetBoat;
-    }
-
     public boolean getInBoat() {
         return inBoat;
     }
-
-    public int getMaxLoot() {
-        return maxLoot;
-    }
-
     public int getDodge() {
         return dodge;
     }
-
     public int getTargeted() {
         return targeted;
     }
@@ -265,7 +253,6 @@ public class Viking {
             if (state == States.RETREAT) increaseMoral(0.01);
         }
     }
-
     private boolean moralCheck(){
         updateMoral();
         return moral > moralThreshold;
@@ -349,7 +336,6 @@ public class Viking {
         }
         if (inBoat) currentTarget = targetBoat.getTargetLocation();
     }
-
     public void findTargetEnemy(int radius) {
         boolean found = false;
         // If fighting or idling find target
@@ -386,11 +372,9 @@ public class Viking {
     private double distanceFromTargetBuilding(){
         return distanceC(currentLocation.x, targetBuilding.getLocation().x, currentLocation.y, targetBuilding.getLocation().y);
     }
-
     private double distanceFromTargetEnemy() {
         return distanceC(currentLocation.x, targetEnemy.getCurrentLocation().x, currentLocation.y, targetEnemy.getCurrentLocation().y);
     }
-
     private double distanceFromTargetBoat(){
         return distanceC(currentLocation.x, targetBoat.getCurrentLocation().x, currentLocation.y, targetBoat.getCurrentLocation().y);
     }
@@ -498,11 +482,11 @@ public class Viking {
         }
     }
 
-    // TODO: 19.01.17 implement leaving loot on the floor
     private void dropLoot() {
+        if (loot != 0)
+            lostLoot = new Loot(loot, currentLocation);
         loot = 0;
     }
-
     private void exit(){
         Random r = new Random();
         boolean generated = false, noColision;
@@ -536,7 +520,6 @@ public class Viking {
             }
         }
     }
-
     private boolean checkExit(Point toCheck){
         if(toCheck.x < size || toCheck.y < size || toCheck.x > map.numRows - size || toCheck.y > map.numCols - size)
             return false;
@@ -553,7 +536,6 @@ public class Viking {
         }
         return true;
     }
-
     private void attack() {
         Random r = new Random();
         if (r.nextInt(101) <= accuracy + primeWeapon.getAccuracy()){
@@ -588,16 +570,6 @@ public class Viking {
             color = new Color(color.getRed() + (damage-def)*2, color.getGreen() + (damage-def)*2 , color.getBlue());
     }
 
-    public void increaseMoral(double increase) {
-        moral += increase;
-        if (moral > 100) moral = 100;
-    }
-
-    public void decreaseMoral(double decrease) {
-        moral -= decrease;
-        if (moral < 0) moral= 0;
-    }
-
 
     // MOVING TEMP!!!
     public void move() {
@@ -617,7 +589,6 @@ public class Viking {
         }
         return true;
     }
-
     private boolean checkM(){
         // Is in previous location
         if(currentLocation.x == previousLocation.x && currentLocation.y == previousLocation.y) {
@@ -637,7 +608,6 @@ public class Viking {
         }
         return true;
     }
-
     private boolean check(){
         return (/*checkB() &&*/ checkM());
     }
@@ -646,7 +616,6 @@ public class Viking {
         previousLocation.x = x;
         previousLocation.y = y;
     }
-
 
     private void Left() {
         int x = currentLocation.x;
@@ -661,7 +630,6 @@ public class Viking {
                                 if (!tryUpRight(x,y))
                                     tryRight(x,y);
     }
-
     private void Right() {
         int x = currentLocation.x;
         int y = currentLocation.y;
@@ -674,7 +642,6 @@ public class Viking {
                                 if (!tryUpLeft(x,y))
                                     tryLeft(x,y);
     }
-
     private void Up() {
         int x = currentLocation.x;
         int y = currentLocation.y;
@@ -687,7 +654,6 @@ public class Viking {
                                 if (!tryDownLeft(x,y))
                                     tryDown(x,y);
     }
-
     private void Down() {
         int x = currentLocation.x;
         int y = currentLocation.y;
@@ -700,7 +666,6 @@ public class Viking {
                                 if (!tryUpLeft(x,y))
                                     tryUp(x,y);
     }
-
     private void UpRight() {
         int x = currentLocation.x;
         int y = currentLocation.y;
@@ -713,7 +678,6 @@ public class Viking {
                                 if (!tryLeft(x,y))
                                     tryDownLeft(x,y);
     }
-
     private void DownRight() {
         int x = currentLocation.x;
         int y = currentLocation.y;
@@ -726,7 +690,6 @@ public class Viking {
                                 if (!tryUp(x,y))
                                     tryUpLeft(x,y);
     }
-
     private void UpLeft() {
         int x = currentLocation.x;
         int y = currentLocation.y;
@@ -739,7 +702,6 @@ public class Viking {
                                 if (!tryUpRight(x,y))
                                     tryUp(x,y);
     }
-
     private void DownLeft() {
         int x = currentLocation.x;
         int y = currentLocation.y;
@@ -753,7 +715,6 @@ public class Viking {
                                     tryUpRight(x,y);
     }
 
-
     private boolean tryUp(int x, int y){
         moveUp(currentLocation);
         if (check()) {
@@ -763,7 +724,6 @@ public class Viking {
         moveDown(currentLocation);
         return false;
     }
-
     private boolean tryDown(int x, int y){
         moveDown(currentLocation);
         if (check()) {
@@ -773,7 +733,6 @@ public class Viking {
         moveUp(currentLocation);
         return false;
     }
-
     private boolean tryLeft(int x, int y){
         moveLeft(currentLocation);
         if (check()) {
@@ -783,7 +742,6 @@ public class Viking {
         moveRight(currentLocation);
         return false;
     }
-
     private boolean tryRight(int x, int y){
         moveRight(currentLocation);
         if (check()) {
@@ -793,7 +751,6 @@ public class Viking {
         moveLeft(currentLocation);
         return false;
     }
-
     private boolean tryUpLeft(int x, int y){
         moveUpLeft(currentLocation);
         if (check()) {
@@ -803,7 +760,6 @@ public class Viking {
         moveDownRight(currentLocation);
         return false;
     }
-
     private boolean tryUpRight(int x, int y){
         moveUpRight(currentLocation);
         if (check()) {
@@ -813,7 +769,6 @@ public class Viking {
         moveDownLeft(currentLocation);
         return false;
     }
-
     private boolean tryDownLeft(int x, int y){
         moveDownLeft(currentLocation);
         if (check()) {
@@ -823,7 +778,6 @@ public class Viking {
         moveUpRight(currentLocation);
         return false;
     }
-
     private boolean tryDownRight(int x, int y){
         moveDownRight(currentLocation);
         if (check()) {
@@ -833,7 +787,6 @@ public class Viking {
         moveUpLeft(currentLocation);
         return false;
     }
-
 
     // Drawing
     public void draw(Graphics g) {
@@ -852,6 +805,11 @@ public class Viking {
                 else
                     shield.draw(g, currentLocation, size, vector + shieldDirection);
             }
+        }
+        else {
+            // Loot
+            if (lostLoot != null)
+                lostLoot.draw(g);
         }
     }
 }

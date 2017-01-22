@@ -19,4 +19,5 @@ public class Colors {
     public static final Color BOAT = new Color(50,20,10);
     public static final Color TEXT = new Color(0,0,0);
     public static final Color LOCATION = new Color(250,180,250);
+    public static final Color LOOT = new Color(180,180,0) ;
 }
