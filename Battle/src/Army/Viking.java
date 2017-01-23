@@ -89,6 +89,7 @@ public class Viking {
         this.state = States.FIGHT;
         this.inBoat = false;
         this.targeted = 0;
+        this.idleCounter = 0;
 
         // Stats for locations and targets
         this.speed = 1;
@@ -170,21 +171,26 @@ public class Viking {
         if (state != States.DEAD && state != States.WAITING)
             state = States.LOSS;
         moral = 100;
+        idleCounter = 0;
     }
     public void setWin() {
         if (state != States.DEAD && state != States.WAITING)
             state = States.WIN;
         moral = 100;
+        idleCounter = 0;
     }
     public void setReAttack() {
         if (state != States.DEAD) {
             state = States.FIGHT;
             moral = 100;
+            idleCounter = 0;
         }
     }
     public void setFighting() {
-        if (state != States.DEAD && state != States.LOSS && state != States.WIN && state != States.RETREAT)
+        if (state != States.DEAD && state != States.LOSS && state != States.WIN && state != States.RETREAT) {
             state = States.FIGHT;
+            idleCounter = 0;
+        }
     }
 
     // Changing targeted and moral
@@ -226,7 +232,9 @@ public class Viking {
     public int getTargeted() {
         return targeted;
     }
-
+    public int getMaxLoot() {
+        return maxLoot;
+    }
 
 
     // OTHER FUNCTIONS
@@ -249,8 +257,9 @@ public class Viking {
             // update moral
             difference = enemy - ally;
             if (difference > 0) decreaseMoral((difference * difference) / 5);
-            else increaseMoral((difference * difference) / 5);
+            else increaseMoral((difference * difference) / 3);
             if (state == States.RETREAT) increaseMoral(0.01);
+            if (health < 10 && (state != States.WIN || state != States.LOSS || state != States.LOOTING)) moral = moralThreshold + 5;
         }
     }
     private boolean moralCheck(){
@@ -284,7 +293,7 @@ public class Viking {
             case States.DEAD:
                 break;
             case States.RETREAT:
-                if (moralCheck()) state = States.FIGHT;
+                if (moralCheck() && idleCounter < 5) state = States.FIGHT;
                 break;
             case States.FIGHT:
                 if (!moralCheck()) state = States.RETREAT;
@@ -292,8 +301,8 @@ public class Viking {
             case States.IDLE:
                 if (targetEnemy != null ) state = States.FIGHT;
                 else {
+                    if (idleCounter >= 5) state = States.RETREAT;
                     idleCounter ++;
-                    if (idleCounter > 200) state = States.RETREAT;
                 }
         }
     }
@@ -338,8 +347,26 @@ public class Viking {
     }
     public void findTargetEnemy(int radius) {
         boolean found = false;
+        // In fight search for the best target
+        if (state == States.FIGHT && targetEnemy != null && targetEnemy.getState() != States.DEAD){
+            double min = distanceFromTargetEnemy();
+            Villager newTarget = targetEnemy;
+            for (SquadVillagers i : enemies)
+                for (Villager j : i.getVillagers())
+                    if (j.getState() != States.DEAD && j.getState() != States.RETREAT) {
+                        double distance = distanceC(j.getCurrentLocation().x, currentLocation.x, j.getCurrentLocation().y, currentLocation.y);
+                        if (distance < min && j.getTargeted() < 2) {
+                            min = distance;
+                            newTarget = j;
+                        }
+                    }
+            targetEnemy.unsetTargeted();
+            newTarget.setTargeted();
+            targetEnemy = newTarget;
+            return;
+        }
         // If fighting or idling find target
-        if ((state == States.FIGHT || state == States.IDLE) && (targetEnemy == null || targetEnemy.getHealth() == 0)) {
+        if ((state == States.FIGHT || state == States.IDLE) && (targetEnemy == null || targetEnemy.getState() == States.DEAD)) {
             if (targetEnemy != null && (targetEnemy.getState() == States.DEAD || targetEnemy.getState() == States.RETREAT || targetEnemy.getState() == States.LOSS)) {
                 targetEnemy.unsetTargeted();
                 targetEnemy = null;
@@ -349,7 +376,7 @@ public class Viking {
                 for (Villager j : i.getVillagers())
                     if (j.getHealth() > 0)
                         if (distanceC(targetBuilding.getLocation().x, j.getCurrentLocation().x, targetBuilding.getLocation().y, j.getCurrentLocation().y) < building*radius) {
-                            if (j.getTargeted() < 3 && (j.getState() != States.RETREAT || j.getState() != States.LOSS)) {
+                            if (j.getTargeted() < 2 && (j.getState() != States.RETREAT || j.getState() != States.LOSS)) {
                                 targetEnemy = j;
                                 j.setTargeted();
                                 state = States.FIGHT;
@@ -385,11 +412,12 @@ public class Viking {
         findTargetEnemy(2);
         updateCurrentTarget();
 
-//        System.out.println(state + ":" + inBoat);
+        System.out.println(state);
 
         // update vectors
         vector = vector(currentLocation, currentTarget);
         direction = direction(vector);
+
         double radius = sqrt((targetBuilding.getWidth()*targetBuilding.getWidth()) + targetBuilding.getHeight()*targetBuilding.getHeight());
 
         // if dead
@@ -413,7 +441,7 @@ public class Viking {
             }
         }
 
-        // if fighting // TODO: 20.01.17 implement behaviour for bow
+        // if fighting // TODO: 20.01.17 implement behaviour for throwWeapon chance
         if (state == States.FIGHT && !inBoat){
             if (targetEnemy == null){
                 if (distanceFromTargetBuilding() > radius)
@@ -441,7 +469,7 @@ public class Viking {
 
         // if looting
         if (state == States.LOOTING){
-            if (distanceFromTargetBuilding() <= targetBuilding.getHeight()/5){
+            if (distanceFromTargetBuilding() <= radius/2 + size/2){
                 loot += targetBuilding.removeLoot();
                 return;
             }
@@ -456,18 +484,21 @@ public class Viking {
                 exit();
                 return;
             }
-            else {
+            else
                 if (!inBoat)
-                    move();
-                return;
-            }
+                    if (map.getTerrainGrid()[currentLocation.x][currentLocation.y] == Colors.HILLS && currentLocation.x == currentLocation.x && currentLocation.y == currentTarget.y)
+                        return;
+                    else {
+                        move();
+                        return;
+                    }
         }
 
         if (state == States.WAITING){
-            // TODO: 21.01.17 Idle move from Kaśka
+            // They just wait
         }
         if (state == States.IDLE){
-            if (targetEnemy == null) findTargetEnemy(5);
+            if (targetEnemy == null) findTargetEnemy(idleCounter);
             if (targetBuilding.getLoot() != 0 && loot == maxLoot) changeTargetBuilding();
             updateCurrentTarget();
         }
@@ -481,7 +512,6 @@ public class Viking {
             }
         }
     }
-
     private void dropLoot() {
         if (loot != 0)
             lostLoot = new Loot(loot, currentLocation);
@@ -540,10 +570,10 @@ public class Viking {
         Random r = new Random();
         if (r.nextInt(101) <= accuracy + primeWeapon.getAccuracy()){
             if (r.nextInt(101) > targetEnemy.getDodge()) {
-                int damage = r.nextInt(8) + 1;
+                int damage = r.nextInt(5) + 1;
                 targetEnemy.damage(damage + primeWeapon.getDamage(), primeWeapon.getPenetration());
                 // if got a hit
-                moral += damage/30;
+                increaseMoral(damage/30);
                 for (SquadVikings squadVikings : allies)
                     for (Viking viking : squadVikings.getVikings())
                         if (viking != this)
@@ -554,8 +584,7 @@ public class Viking {
         // If he missed
         else moral -= 0.03;
     }
-
-    // TODO: 20.01.17 make him and people around loss moral
+    // TODO: 20.01.17 make people around loss moral
     public void damage(int damage, int penetration) {
         int def = defense;
         if (shield != null ) def += shield.getDefense();
@@ -564,6 +593,7 @@ public class Viking {
         if (def >= damage) return;
         health -= (damage - def);
         if (health < 0) health = 0;
+        decreaseMoral((damage-def)/30);
         if (leader)
             color = new Color(color.getRed() + (damage-def)/2, color.getGreen() + (damage-def)/2, color.getBlue());
         else
@@ -583,11 +613,24 @@ public class Viking {
         if (direction == Directions.UPLEFT) UpLeft();
     }
 
-    private boolean checkB(){
-        for (Building i : village.getBuildings()){
-            if (distanceC(currentLocation.x, i.getLocation().x, currentLocation.y, i.getLocation().y) < size + i.getHeight()/2 ) return false;
-        }
+    private boolean checkV(){
+        for (SquadVikings squadVikings : allies)
+            for (Viking viking : squadVikings.getVikings())
+                if (viking != this)
+                    if (distanceC(currentLocation.x, viking.getCurrentLocation().x, currentLocation.y, viking.getCurrentLocation().y) < size && viking.getState() != States.DEAD)
+                        return false;
+        for (SquadVillagers squadVillagers : enemies)
+            for (Villager villager : squadVillagers.getVillagers())
+                    if (distanceC(currentLocation.x, villager.getCurrentLocation().x, currentLocation.y, villager.getCurrentLocation().y) < size && villager.getState() != States.DEAD)
+                        return false;
         return true;
+    }
+    private boolean checkB(){
+        double radius = sqrt((targetBuilding.getWidth() * targetBuilding.getWidth()) + targetBuilding.getHeight() * targetBuilding.getHeight())/2;
+            for (Building i : village.getBuildings())
+                if (distanceC(currentLocation.x, i.getLocation().x, currentLocation.y, i.getLocation().y) < radius)
+                    return false;
+            return true;
     }
     private boolean checkM(){
         // Is in previous location
@@ -609,7 +652,7 @@ public class Viking {
         return true;
     }
     private boolean check(){
-        return (/*checkB() &&*/ checkM());
+        return (checkB() && checkM() && checkV());
     }
 
     private void setPreviousLocation(int x, int y){
@@ -617,102 +660,110 @@ public class Viking {
         previousLocation.y = y;
     }
 
-    private void Left() {
-        int x = currentLocation.x;
-        int y = currentLocation.y;
-        if (!tryLeft(x,y))
-            if (!tryDownLeft(x,y))
-                if (!tryDown(x,y))
-                    if (!tryDownRight(x,y))
-                    if (!tryUpLeft(x,y))
-                        if (!tryUp(x,y))
-
-                                if (!tryUpRight(x,y))
-                                    tryRight(x,y);
-    }
-    private void Right() {
+    // changed
+    private boolean Right() {
         int x = currentLocation.x;
         int y = currentLocation.y;
         if (!tryRight(x,y))
             if (!tryDownRight(x,y))
-                if (!tryUpRight(x,y))
-                    if (!tryDown(x,y))
-                        if (!tryUp(x,y))
-                            if (!tryDownLeft(x,y))
-                                if (!tryUpLeft(x,y))
-                                    tryLeft(x,y);
+                if (!tryDown(x,y))
+                    if (!tryDownLeft(x,y))
+                        if (!tryLeft(x,y))
+                            if (!tryUpLeft(x,y))
+                                if (!tryUp(x,y))
+                                    return false;
+        return true;
     }
-    private void Up() {
+    private boolean Left() {
+        int x = currentLocation.x;
+        int y = currentLocation.y;
+        if (!tryLeft(x,y))
+            if (!tryUpLeft(x,y))
+                if (!tryUp(x,y))
+                    if (!tryUpRight(x,y))
+                        if (!tryRight(x,y))
+                            if (!tryDownRight(x,y))
+                                if (!tryDown(x,y))
+                                    return false;
+        return true;
+    }
+    private boolean Up() {
         int x = currentLocation.x;
         int y = currentLocation.y;
         if (!tryUp(x,y))
             if (!tryUpRight(x,y))
                 if (!tryRight(x,y))
                     if (!tryDownRight(x,y))
-                        if (!tryUpLeft(x,y))
-                            if (!tryLeft(x,y))
-                                if (!tryDownLeft(x,y))
-                                    tryDown(x,y);
+                        if (!tryDown(x,y))
+                            if (!tryDownLeft(x,y))
+                                if (!tryRight(x,y))
+                                    return false;
+        return true;
     }
-    private void Down() {
+    private boolean Down() {
         int x = currentLocation.x;
         int y = currentLocation.y;
         if (!tryDown(x,y))
-            if (!tryDownRight(x,y))
-                if (!tryDownLeft(x,y))
-                    if (!tryRight(x,y))
-                        if (!tryLeft(x,y))
+            if (!tryDownLeft(x,y))
+                if (!tryLeft(x,y))
+                    if (!tryUpLeft(x,y))
+                        if (!tryUp(x,y))
                             if (!tryUpRight(x,y))
-                                if (!tryUpLeft(x,y))
-                                    tryUp(x,y);
+                                if (!tryLeft(x,y))
+                                    return false;
+        return true;
     }
-    private void UpRight() {
+    private boolean UpRight() {
         int x = currentLocation.x;
         int y = currentLocation.y;
         if (!tryUpRight(x,y))
             if (!tryRight(x,y))
-                if (!tryUp(x,y))
-                    if (!tryDownRight(x,y))
-                        if (!tryUpLeft(x,y))
-                            if (!tryDown(x,y))
-                                if (!tryLeft(x,y))
-                                    tryDownLeft(x,y);
-    }
-    private void DownRight() {
-        int x = currentLocation.x;
-        int y = currentLocation.y;
-        if (!tryDownRight(x,y))
-            if (!tryDown(x,y))
-                if (!tryRight(x,y))
-                    if (!tryDownLeft(x,y))
-                        if (!tryUpRight(x,y))
-                            if (!tryLeft(x,y))
-                                if (!tryUp(x,y))
-                                    tryUpLeft(x,y);
-    }
-    private void UpLeft() {
-        int x = currentLocation.x;
-        int y = currentLocation.y;
-        if (!tryUpLeft(x,y))
-            if (!tryLeft(x,y))
-                if (!tryDownLeft(x,y))
+                if (!tryDownRight(x,y))
                     if (!tryDown(x,y))
-                        if (!tryDownRight(x,y))
-                            if (!tryRight(x,y))
-                                if (!tryUpRight(x,y))
-                                    tryUp(x,y);
+                        if (!tryDownLeft(x,y))
+                            if (!tryLeft(x,y))
+                                if (!tryUpLeft(x,y))
+                                    return false;
+        return true;
     }
-    private void DownLeft() {
+    private boolean UpLeft() {
+        int x = currentLocation.x;
+        int y = currentLocation.y;
+        if (!tryUpLeft(x, y))
+            if (!tryLeft(x, y))
+                if (!tryDownLeft(x, y))
+                    if (!tryDown(x, y))
+                        if (!tryDownRight(x, y))
+                            if (!tryRight(x,y))
+                                if (!tryUpLeft(x,y))
+                                    return false;
+        return true;
+    }
+    private boolean DownLeft() {
         int x = currentLocation.x;
         int y = currentLocation.y;
         if (!tryDownLeft(x,y))
-            if (!tryDown(x,y))
-                if (!tryLeft(x,y))
-                    if (!tryDownRight(x,y))
-                        if (!tryUpLeft(x,y))
+            if (!tryLeft(x,y))
+                if (!tryUpLeft(x,y))
+                    if (!tryUp(x,y))
+                        if (!tryUpRight(x,y))
                             if (!tryRight(x,y))
-                                if (!tryUp(x,y))
-                                    tryUpRight(x,y);
+                                if (!tryDownRight(x,y))
+                                    return false;
+        return true;
+    }
+    private boolean DownRight() {
+        int x = currentLocation.x;
+        int y = currentLocation.y;
+        if (!tryDownRight(x,y))
+            if (!tryRight(x,y))
+                if (!tryUpRight(x,y))
+                    if (!tryUp(x,y))
+                        if (!tryDownLeft(x,y))
+                            if (!tryLeft(x,y))
+                                if (!tryDownLeft(x,y))
+                                    return false;
+        return true;
     }
 
     private boolean tryUp(int x, int y){
@@ -796,6 +847,8 @@ public class Viking {
             g2d.setColor(color);
             g2d.rotate(toRadians(vector), currentLocation.x, currentLocation.y);
             g2d.fillOval(currentLocation.x - size / 2, currentLocation.y - size / 2, size, size);
+            g2d.setColor(Colors.VIKING);
+            g2d.fillRect(currentLocation.x, currentLocation.y, 2, 2);
             // Weapon
             primeWeapon.draw(g, currentLocation, size, vector);
             // Shield

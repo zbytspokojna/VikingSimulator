@@ -25,6 +25,8 @@ public class GUI extends JFrame {
     private Controller controller;
     private java.util.Timer timer;
     private TimerTask task;
+    private int height;
+    private int width;
 
     public GUI (){
         super("Viking Simulator");
@@ -34,8 +36,12 @@ public class GUI extends JFrame {
 
         // Setting bounds
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-        double width = screenSize.getWidth();
-        this.setBounds((int) ((width-1202)/2), 0, 1202, 1029);
+        double screenWidth = screenSize.getWidth();
+
+        width = 1202;
+        height = (int) (screenSize.getHeight() - 60);
+
+        this.setBounds((int) ((screenWidth-1202)/2), 0, width, height);
 
         // Creating start panel
         controller = new Controller();
@@ -44,18 +50,23 @@ public class GUI extends JFrame {
         controller.setVisible(true);
 
         // Logo and maker
-        BufferedImage logo = null;
-        BufferedImage maker = null;
+        BufferedImage bLogo = null;
+        BufferedImage bMaker = null;
         try {
-            maker = ImageIO.read(this.getClass().getResource("madeBy.png"));
-            logo = ImageIO.read(this.getClass().getResource("Title.png"));
+            bMaker = ImageIO.read(this.getClass().getResource("madeBy.png"));
+            bLogo = ImageIO.read(this.getClass().getResource("Title.png"));
         } catch (IOException e) {
             e.printStackTrace();
         }
+        System.out.println(bLogo.getHeight());
+        Image logo = bLogo.getScaledInstance(resize(bLogo.getWidth()), resize(bLogo.getHeight()), Image.SCALE_DEFAULT);
+        Image maker = bMaker.getScaledInstance(resize(bMaker.getWidth()), resize(bMaker.getHeight()), Image.SCALE_DEFAULT);
         JLabel logoLabel = new JLabel(new ImageIcon(logo));
         JLabel makerLabel = new JLabel(new ImageIcon(maker));
-        logoLabel.setBounds(0,24,1202,236);
-        makerLabel.setBounds(376,925,450,50);
+        logoLabel.setHorizontalAlignment(JLabel.CENTER);
+        makerLabel.setHorizontalAlignment(JLabel.CENTER);
+        logoLabel.setBounds(0,0,width, logo.getHeight(null));
+        makerLabel.setBounds(0, resize(925), width, maker.getHeight(null));
         controller.add(logoLabel);
         controller.add(makerLabel);
 
@@ -63,32 +74,32 @@ public class GUI extends JFrame {
         // VARIABLES
         // Informations
         final JLabel info = new JLabel("If ready press generate!");
-        info.setFont(new Font("Romain", Font.PLAIN, 25));
+        info.setFont(new Font("Romain", Font.PLAIN, resize(25)));
         info.setHorizontalAlignment(JLabel.CENTER);
-        info.setBounds(401,700,400,50);
+        info.setBounds(0, resize(700), width, resize(50));
         controller.add(info);
 
 
         // Size of village
         JLabel village = new JLabel("<html><center>Choose size<br />of the village<center></html>");
         village.setForeground(Colors.BUILDING);
-        village.setFont(new Font("Romain", Font.PLAIN, 30));
-        village.setBounds(60, 300, 300, 100);
+        village.setFont(new Font("Romain", Font.PLAIN, resize(30)));
+        village.setBounds(60, resize(300), 300, resize(100));
         controller.add(village);
 
         final JCheckBox villageSize1 = new JCheckBox("4 buildings");
-        villageSize1.setFont(new Font("Romain", Font.PLAIN, 20));
-        villageSize1.setBounds(85,400,150,50);
+        villageSize1.setFont(new Font("Romain", Font.PLAIN, resize(20)));
+        villageSize1.setBounds(60, resize(400), 150, resize(50));
         controller.add(villageSize1);
 
         final JCheckBox villageSize2 = new JCheckBox("5 buildings");
-        villageSize2.setFont(new Font("Romain", Font.PLAIN, 20));
-        villageSize2.setBounds(85,460,150,50);
+        villageSize2.setFont(new Font("Romain", Font.PLAIN, resize(20)));
+        villageSize2.setBounds(60, resize(460), 150, resize(50));
         controller.add(villageSize2);
 
         final JCheckBox villageSize3 = new JCheckBox("6 buildings BUGS!");
-        villageSize3.setFont(new Font("Romain", Font.PLAIN, 20));
-        villageSize3.setBounds(85,520,210,50);
+        villageSize3.setFont(new Font("Romain", Font.PLAIN, resize(20)));
+        villageSize3.setBounds(60, resize(520), 210, resize(50));
         controller.add(villageSize3);
 
         ButtonGroup villageSize = new ButtonGroup();
@@ -102,28 +113,28 @@ public class GUI extends JFrame {
         // Size of vikings squad
         JLabel vikings = new JLabel("<html><center>Choose size of<br />the viking squads<center></html>");
         vikings.setForeground(Colors.VIKING);
-        vikings.setFont(new Font("Romain", Font.PLAIN, 30));
-        vikings.setBounds(451, 300, 300, 100);
+        vikings.setFont(new Font("Romain", Font.PLAIN, resize(30)));
+        vikings.setBounds(451, resize(300), 300, resize(100));
         controller.add(vikings);
 
         JLabel minLabel1 = new JLabel("<html><center>Minimal<br />size of squad<center><html>");
         JLabel maxLabel1 = new JLabel("<html><center>Maximal<br />size of squad<center><html>");
-        minLabel1.setBounds(480, 420, 150, 50);
-        minLabel1.setFont(new Font("Romain", Font.PLAIN, 20));
-        maxLabel1.setBounds(480, 500, 150, 50);
-        maxLabel1.setFont(new Font("Romain", Font.PLAIN, 20));
+        minLabel1.setBounds(480, resize(420), 150, resize(50));
+        minLabel1.setFont(new Font("Romain", Font.PLAIN, resize(20)));
+        maxLabel1.setBounds(480, resize(500), 150, resize(50));
+        maxLabel1.setFont(new Font("Romain", Font.PLAIN, resize(20)));
         controller.add(minLabel1);
         controller.add(maxLabel1);
 
         final JFormattedTextField minField1 = new JFormattedTextField();
         minField1.setHorizontalAlignment(JFormattedTextField.CENTER);
-        minField1.setBounds(640, 420, 50, 50);
+        minField1.setBounds(640, resize(420), 50, resize(50));
         controller.add(minField1);
         minField1.setValue(1);
 
         final JFormattedTextField maxField1 = new JFormattedTextField();
         maxField1.setHorizontalAlignment(JFormattedTextField.CENTER);
-        maxField1.setBounds(640, 500, 50, 50);
+        maxField1.setBounds(640, resize(500), 50, resize(50));
         controller.add(maxField1);
         maxField1.setValue(10);
 
@@ -169,26 +180,28 @@ public class GUI extends JFrame {
         // Size of villagers squad
         JLabel villagers = new JLabel("<html><center>Choose size of<br />the villager squads<center></html>");
         villagers.setForeground(Colors.VILLAGER);
-        villagers.setFont(new Font("Romain", Font.PLAIN, 30));
-        villagers.setBounds(842, 300, 300, 100);
+        villagers.setFont(new Font("Romain", Font.PLAIN, resize(30)));
+        villagers.setBounds(842, resize(300), 300, resize(100));
         controller.add(villagers);
 
         JLabel minLabel2 = new JLabel("<html><center>Minimal<br />size of squad<center><html>");
         JLabel maxLabel2 = new JLabel("<html><center>Maximal<br />size of squad<center><html>");
-        minLabel2.setBounds(891, 420, 150, 50);
-        maxLabel2.setBounds(891, 500, 150, 50);
+        minLabel2.setBounds(891, resize(420), 150, resize(50));
+        minLabel2.setFont(new Font("Romain", Font.PLAIN, resize(20)));
+        maxLabel2.setBounds(891, resize(500), 150, resize(50));
+        maxLabel2.setFont(new Font("Romain", Font.PLAIN, resize(20)));
         controller.add(minLabel2);
         controller.add(maxLabel2);
 
         final JFormattedTextField minField2 = new JFormattedTextField();
         minField2.setHorizontalAlignment(JFormattedTextField.CENTER);
-        minField2.setBounds(1051, 420, 50, 50);
+        minField2.setBounds(1051, resize(420), 50, resize(50));
         controller.add(minField2);
         minField2.setValue(1);
 
         final JFormattedTextField maxField2 = new JFormattedTextField();
         maxField2.setHorizontalAlignment(JFormattedTextField.CENTER);
-        maxField2.setBounds(1051, 500, 50, 50);
+        maxField2.setBounds(1051, resize(500), 50, resize(50));
         controller.add(maxField2);
         maxField2.setValue(10);
 
@@ -233,8 +246,8 @@ public class GUI extends JFrame {
 
         // Random button
         final JButton randomButton = new JButton("@$%  Randomize  %$@");
-        randomButton.setFont(new Font("Romain", Font.PLAIN, 20));
-        randomButton.setBounds(430, 600, 342, 50);
+        randomButton.setFont(new Font("Romain", Font.PLAIN, resize(20)));
+        randomButton.setBounds(430, resize(600), 342, resize(50));
         controller.add(randomButton);
         randomButton.addActionListener(new ActionListener() {
             @Override
@@ -268,8 +281,8 @@ public class GUI extends JFrame {
 
         // Start button
         final JButton startButton = new JButton("GENERATE");
-        startButton.setFont(new Font("Romain", Font.BOLD, 50));
-        startButton.setBounds(75,100,1052,100);
+        startButton.setFont(new Font("Romain", Font.BOLD, resize(50)));
+        startButton.setBounds(75,resize(800),1052,resize(100));
         controller.add(startButton);
         startButton.addActionListener(new ActionListener() {
             @Override
@@ -299,7 +312,10 @@ public class GUI extends JFrame {
                 timer.schedule(task,0,1000/60);
 
                 // Buttons
-                final JButton backButton = new JButton("<html>Back<br />to menu</html>");
+                final JButton backButton = new JButton("<html><center>Back<br />to menu<center></html>");
+                backButton.setBounds(1100,0,100,100);
+                simulator.add(backButton);
+
                 backButton.addActionListener(new ActionListener() {
                     @Override
                     public void actionPerformed(ActionEvent actionEvent) {
@@ -310,10 +326,10 @@ public class GUI extends JFrame {
                         task.cancel();
                     }
                 });
-                backButton.setBounds(1100,0,100,100);
-                simulator.add(backButton);
 
                 final JButton pauseButton = new JButton("Start");
+                pauseButton.setBounds(1000,0,100,100);
+                simulator.add(pauseButton);
                 pauseButton.addActionListener(new ActionListener() {
                     @Override
                     public void actionPerformed(ActionEvent actionEvent) {
@@ -327,14 +343,16 @@ public class GUI extends JFrame {
                         }
                     }
                 });
-                pauseButton.setBounds(1000,0,100,100);
-                simulator.add(pauseButton);
 
-                final JLabel fps = new JLabel("FPS = 60");
-                fps.setBounds(1070,120,100,20);
+
+                final JLabel fps = new JLabel("<html><center>FPS = 60<center><html>");
+                fps.setFont(new Font("Romain", Font.BOLD, 15));
+                fps.setBounds(1050,110,100,20);
                 simulator.add(fps);
 
                 final JSlider speed = new JSlider(JSlider.HORIZONTAL, 1, 200, 60);
+                speed.setBounds(1000, 130, 200, 20);
+                simulator.add(speed);
                 speed.addChangeListener(new ChangeListener() {
                     @Override
                     public void stateChanged(ChangeEvent changeEvent) {
@@ -349,11 +367,10 @@ public class GUI extends JFrame {
                         };
                         timer = new java.util.Timer();
                         timer.schedule(task,0,1000/src.getValue());
-                        fps.setText("FPS = " + src.getValue());
+                        String s = "FPS = " + src.getValue();
+                        fps.setText("<html><center>" + s + "<center><html>");
                     }
                 });
-                speed.setBounds(1000, 150, 200, 20);
-                simulator.add(speed);
             }
         });
 
@@ -368,6 +385,10 @@ public class GUI extends JFrame {
             System.out.print("\n\nQuitting the application!\n");
             System.exit(0);
         }
+    }
+
+    public int resize(double size){
+        return (int) (height*size/1020);
     }
 }
 

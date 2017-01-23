@@ -72,25 +72,29 @@ public class Villagers {
 
         // Regruping or retreating
         if (retreated != 0 && lost + retreated == squads.size()){
-            int size = 0, alive = 0, inForest = 0;
+            int size = 0, alive = 0, alive2 = 0, inForest = 0;
             for (SquadVillagers i : squads) {
                 size += i.getSize();
                 if (i.getState() == States.RETREAT)
-                    for (Villager j : i.getVillagers()) {
+                    for (Villager j : i.getVillagers())
                         if (j.getState() != States.DEAD) alive++;
-                        if (j.getInForest()) inForest++;
-                    }
             }
-            if (inForest == alive) {
-                if (alive < size / 2) {
-                    state = States.LOSS;
-                    return;
-                } else {
-                    state = States.FIGHT;
-                    for (SquadVillagers i : squads)
-                        i.setReAttack();
-                    return;
-                }
+            for (SquadVikings i : enemies)
+                for (Viking j : i.getVikings())
+                    if (j.getState() != States.DEAD)
+                        alive2++;
+
+            // Reattack
+            if (alive >= size/2 || alive2 <= alive) {
+                state = States.FIGHT;
+                for (SquadVillagers i : squads)
+                    i.setReAttack();
+                return;
+            }
+            // Loss
+            else {
+                state = States.LOSS;
+                return;
             }
         }
 

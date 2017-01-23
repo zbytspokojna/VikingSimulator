@@ -69,7 +69,7 @@ public class Villager {
         if (color == Colors.VILLAGER_LEADER) leader = true;
         if (!leader) {
             this.health = 100;
-            this.moralThreshold = r.nextInt(11) + 20;
+            this.moralThreshold = r.nextInt(11) + 25;
             this.defense = r.nextInt(3) + 1;
             this.accuracy = r.nextInt(31) + 30;
             this.dodge = r.nextInt(21) + 10;
@@ -207,8 +207,9 @@ public class Villager {
             // update moral
             difference = enemy - ally;
             if (difference > 0) decreaseMoral((difference * difference) / 2);
-            else increaseMoral((difference * difference) / 2);
+            else increaseMoral((difference * difference) / 5);
             if (state == States.RETREAT) increaseMoral(0.01);
+            if (health < 10 && (state != States.WIN || state != States.LOSS)) moral = moralThreshold + 5;
         }
     }
     private boolean moralCheck(){
@@ -219,6 +220,8 @@ public class Villager {
     // State
     public void estimateState() {
         // No matter what state check if not dead or retreated
+        inForest = map.getTerrainGrid()[currentLocation.x][currentLocation.y] == Colors.FOREST;
+
         if (health == 0) {
             state = States.DEAD;
             return;
@@ -227,7 +230,6 @@ public class Villager {
             state = States.RETREAT;
             return;
         }
-        inForest = map.getTerrainGrid()[currentLocation.x][currentLocation.y] == Colors.FOREST;
 
         switch (state){
             case States.WIN:
@@ -272,19 +274,37 @@ public class Villager {
                 currentTarget = targetBuilding.getLocation();
         }
     }
-    public void findTargetEnemy() {
+    public void findTargetEnemy(int radius) {
         boolean found = false;
+        // In fight search for the best target
+        if (state == States.FIGHT && targetEnemy != null && targetEnemy.getState() != States.DEAD){
+            double min = distanceFromTargetEnemy();
+            Viking newTarget = targetEnemy;
+            for (SquadVikings i : enemies)
+                for (Viking j : i.getVikings())
+                    if (j.getState() != States.DEAD) {
+                        double distance = distanceC(j.getCurrentLocation().x, currentLocation.x, j.getCurrentLocation().y, currentLocation.y);
+                        if (distance < min && j.getTargeted() < 2 && !j.getInBoat()) {
+                            min = distance;
+                            newTarget = j;
+                        }
+                    }
+            targetEnemy.unsetTargeted();
+            newTarget.setTargeted();
+            targetEnemy = newTarget;
+            return;
+        }
         // If fighting or idling find target
         if ((state == States.FIGHT || state == States.IDLE) && (targetEnemy == null || targetEnemy.getHealth() == 0)) {
             if (targetEnemy != null && (targetEnemy.getState() == States.DEAD || targetEnemy.getState() == States.RETREAT || targetEnemy.getState() == States.LOSS)) {
                 targetEnemy.unsetTargeted();
                 targetEnemy = null;
             }
-            double radius = sqrt((targetBuilding.getWidth()*targetBuilding.getWidth()) + targetBuilding.getHeight()*targetBuilding.getHeight());
+            double building = sqrt((targetBuilding.getWidth()*targetBuilding.getWidth()) + targetBuilding.getHeight()*targetBuilding.getHeight());
             for (SquadVikings i : enemies) {
                 for (Viking j : i.getVikings()) {
                     if (j.getHealth() > 0)
-                        if (distanceC(targetBuilding.getLocation().x, j.getCurrentLocation().x, targetBuilding.getLocation().y, j.getCurrentLocation().y) < radius*2)
+                        if (distanceC(targetBuilding.getLocation().x, j.getCurrentLocation().x, targetBuilding.getLocation().y, j.getCurrentLocation().y) < building*radius)
                             if (j.getTargeted() < 3 && (j.getState() != States.RETREAT || j.getState() != States.LOSS)) {
                                 targetEnemy = j;
                                 j.setTargeted();
@@ -312,10 +332,9 @@ public class Villager {
         return distanceC(currentLocation.x, targetEnemy.getCurrentLocation().x, currentLocation.y, targetEnemy.getCurrentLocation().y);
     }
 
-
     public void action() {
         // update target
-        findTargetEnemy();
+        findTargetEnemy(2);
         updateCurrentTarget();
 
         // update vectors
@@ -343,7 +362,7 @@ public class Villager {
                 attack();
                 return;
             }
-            else if (distanceFromTargetBuilding() > radius*5){
+            else if (distanceFromTargetBuilding() > radius*4.2){
                 targetEnemy.unsetTargeted();
                 targetEnemy = null;
                 currentTarget = targetBuilding.getLocation();
@@ -368,12 +387,16 @@ public class Villager {
 
         // If battle is done
         if (state == States.WIN || state == States.LOSS){
-            move();
-            return;
+            if (currentLocation.x == currentTarget.x && currentLocation.y == currentTarget.y)
+                return;
+            else {
+                move();
+                return;
+            }
         }
 
         if (state == States.IDLE){
-            findTargetEnemy();
+            findTargetEnemy(5);
             updateCurrentTarget();
             if (targetBuilding.getLoot() == 0) changeTargetBuilding();
         }
@@ -387,8 +410,6 @@ public class Villager {
             }
         }
     }
-
-    // TODO: 19.01.17 implement leaving loot on the floor
     private void dropLoot() {
         loot = 0;
     }
@@ -399,7 +420,7 @@ public class Villager {
                 int damage = r.nextInt(5) + 1;
                 targetEnemy.damage(damage + primeWeapon.getDamage(), primeWeapon.getPenetration());
                 // if got a hit
-                moral += damage/30;
+                increaseMoral(damage/30);
                 for (SquadVillagers squadVillagers : allies)
                     for (Villager villager : squadVillagers.getVillagers())
                         if (villager != this)
@@ -410,8 +431,7 @@ public class Villager {
         // If he missed
         else moral -= 0.03;
     }
-
-    // TODO: 20.01.17 make him and people around loss moral
+    // TODO: 20.01.17 make people around loss moral
     public void damage(int damage, int penetration) {
         int def = defense;
         if (shield != null ) def += shield.getDefense();
@@ -420,13 +440,12 @@ public class Villager {
         if (def >= damage) return;
         health -= (damage - def);
         if (health < 0) health = 0;
+        decreaseMoral((damage-def)/30);
         if (leader)
             color = new Color(color.getRed(), color.getGreen() + (damage-def)/2, color.getBlue() + (damage-def)/2);
         else
             color = new Color(color.getRed(), color.getGreen() + (damage-def)*2 , color.getBlue() + (damage-def)*2);
     }
-
-
 
 
     // MOVING TEMP!!!
@@ -441,13 +460,25 @@ public class Villager {
         if (direction == Directions.UPLEFT) UpLeft();
     }
 
-    private boolean checkB(){
-        for (Building i : village.getBuildings()){
-            if (distanceC(currentLocation.x, i.getLocation().x, currentLocation.y, i.getLocation().y) < size + i.getHeight()/2 ) return false;
-        }
+    private boolean checkV(){
+        for (SquadVikings squadVikings : enemies)
+            for (Viking viking : squadVikings.getVikings())
+                if (distanceC(currentLocation.x, viking.getCurrentLocation().x, currentLocation.y, viking.getCurrentLocation().y) < size && viking.getState() != States.DEAD)
+                    return false;
+        for (SquadVillagers squadVillagers : allies)
+            for (Villager villager : squadVillagers.getVillagers())
+                if (villager != this)
+                    if (distanceC(currentLocation.x, villager.getCurrentLocation().x, currentLocation.y, villager.getCurrentLocation().y) < size && villager.getState() != States.DEAD)
+                        return false;
         return true;
     }
-
+    private boolean checkB(){
+        double radius = sqrt((targetBuilding.getWidth() * targetBuilding.getWidth()) + targetBuilding.getHeight() * targetBuilding.getHeight())/2;
+        for (Building i : village.getBuildings())
+            if (distanceC(currentLocation.x, i.getLocation().x, currentLocation.y, i.getLocation().y) < radius)
+                return false;
+        return true;
+    }
     private boolean checkM(){
         // Is in previous location
         if(currentLocation.x == previousLocation.x && currentLocation.y == previousLocation.y) {
@@ -467,9 +498,8 @@ public class Villager {
         }
         return true;
     }
-
     private boolean check(){
-        return (/*checkB() &&*/ checkM());
+        return (checkB() && checkM() && checkV());
     }
 
     private void setPreviousLocation(int x, int y){
@@ -477,112 +507,111 @@ public class Villager {
         previousLocation.y = y;
     }
 
-
-    private void Left() {
-        int x = currentLocation.x;
-        int y = currentLocation.y;
-        if (!tryLeft(x,y))
-            if (!tryDownLeft(x,y))
-                if (!tryDown(x,y))
-                    if (!tryDownRight(x,y))
-                        if (!tryUpLeft(x,y))
-                            if (!tryUp(x,y))
-
-                                if (!tryUpRight(x,y))
-                                    tryRight(x,y);
-    }
-
-    private void Right() {
+    // changed
+    private boolean Right() {
         int x = currentLocation.x;
         int y = currentLocation.y;
         if (!tryRight(x,y))
             if (!tryDownRight(x,y))
-                if (!tryUpRight(x,y))
-                    if (!tryDown(x,y))
-                        if (!tryUp(x,y))
-                            if (!tryDownLeft(x,y))
-                                if (!tryUpLeft(x,y))
-                                    tryLeft(x,y);
+                if (!tryDown(x,y))
+                    if (!tryDownLeft(x,y))
+                        if (!tryLeft(x,y))
+                            if (!tryUpLeft(x,y))
+                                if (!tryUp(x,y))
+                                    return false;
+        return true;
     }
-
-    private void Up() {
+    private boolean Left() {
+        int x = currentLocation.x;
+        int y = currentLocation.y;
+        if (!tryLeft(x,y))
+            if (!tryUpLeft(x,y))
+                if (!tryUp(x,y))
+                    if (!tryUpRight(x,y))
+                        if (!tryRight(x,y))
+                            if (!tryDownRight(x,y))
+                                if (!tryDown(x,y))
+                                    return false;
+        return true;
+    }
+    private boolean Up() {
         int x = currentLocation.x;
         int y = currentLocation.y;
         if (!tryUp(x,y))
             if (!tryUpRight(x,y))
                 if (!tryRight(x,y))
                     if (!tryDownRight(x,y))
-                        if (!tryUpLeft(x,y))
-                            if (!tryLeft(x,y))
-                                if (!tryDownLeft(x,y))
-                                    tryDown(x,y);
+                        if (!tryDown(x,y))
+                            if (!tryDownLeft(x,y))
+                                if (!tryRight(x,y))
+                            return false;
+        return true;
     }
-
-    private void Down() {
+    private boolean Down() {
         int x = currentLocation.x;
         int y = currentLocation.y;
         if (!tryDown(x,y))
-            if (!tryDownRight(x,y))
-                if (!tryDownLeft(x,y))
-                    if (!tryRight(x,y))
-                        if (!tryLeft(x,y))
+            if (!tryDownLeft(x,y))
+                if (!tryLeft(x,y))
+                    if (!tryUpLeft(x,y))
+                        if (!tryUp(x,y))
                             if (!tryUpRight(x,y))
-                                if (!tryUpLeft(x,y))
-                                    tryUp(x,y);
+                                if (!tryLeft(x,y))
+                                    return false;
+        return true;
     }
-
-    private void UpRight() {
+    private boolean UpRight() {
         int x = currentLocation.x;
         int y = currentLocation.y;
         if (!tryUpRight(x,y))
             if (!tryRight(x,y))
-                if (!tryUp(x,y))
-                    if (!tryDownRight(x,y))
-                        if (!tryUpLeft(x,y))
-                            if (!tryDown(x,y))
-                                if (!tryLeft(x,y))
-                                    tryDownLeft(x,y);
-    }
-
-    private void DownRight() {
-        int x = currentLocation.x;
-        int y = currentLocation.y;
-        if (!tryDownRight(x,y))
-            if (!tryDown(x,y))
-                if (!tryRight(x,y))
-                    if (!tryDownLeft(x,y))
-                        if (!tryUpRight(x,y))
-                            if (!tryLeft(x,y))
-                                if (!tryUp(x,y))
-                                    tryUpLeft(x,y);
-    }
-
-    private void UpLeft() {
-        int x = currentLocation.x;
-        int y = currentLocation.y;
-        if (!tryUpLeft(x,y))
-            if (!tryLeft(x,y))
-                if (!tryDownLeft(x,y))
+                if (!tryDownRight(x,y))
                     if (!tryDown(x,y))
-                        if (!tryDownRight(x,y))
-                            if (!tryRight(x,y))
-                                if (!tryUpRight(x,y))
-                                    tryUp(x,y);
+                        if (!tryDownLeft(x,y))
+                            if (!tryLeft(x,y))
+                                if (!tryUpLeft(x,y))
+                            return false;
+        return true;
     }
-
-    private void DownLeft() {
+    private boolean UpLeft() {
+        int x = currentLocation.x;
+        int y = currentLocation.y;
+        if (!tryUpLeft(x, y))
+            if (!tryLeft(x, y))
+                if (!tryDownLeft(x, y))
+                    if (!tryDown(x, y))
+                        if (!tryDownRight(x, y))
+                            if (!tryRight(x,y))
+                                if (!tryUpLeft(x,y))
+                                    return false;
+        return true;
+    }
+    private boolean DownLeft() {
         int x = currentLocation.x;
         int y = currentLocation.y;
         if (!tryDownLeft(x,y))
-            if (!tryDown(x,y))
-                if (!tryLeft(x,y))
-                    if (!tryDownRight(x,y))
-                        if (!tryUpLeft(x,y))
+            if (!tryLeft(x,y))
+                if (!tryUpLeft(x,y))
+                    if (!tryUp(x,y))
+                        if (!tryUpRight(x,y))
                             if (!tryRight(x,y))
-                                if (!tryUp(x,y))
-                                    tryUpRight(x,y);
+                                if (!tryDownRight(x,y))
+                                    return false;
+        return true;
     }
-
+    private boolean DownRight() {
+        int x = currentLocation.x;
+        int y = currentLocation.y;
+        if (!tryDownRight(x,y))
+            if (!tryRight(x,y))
+                if (!tryUpRight(x,y))
+                    if (!tryUp(x,y))
+                        if (!tryDownLeft(x,y))
+                            if (!tryLeft(x,y))
+                                if (!tryDownLeft(x,y))
+                                    return false;
+        return true;
+    }
 
     private boolean tryUp(int x, int y){
         moveUp(currentLocation);
@@ -593,7 +622,6 @@ public class Villager {
         moveDown(currentLocation);
         return false;
     }
-
     private boolean tryDown(int x, int y){
         moveDown(currentLocation);
         if (check()) {
@@ -603,7 +631,6 @@ public class Villager {
         moveUp(currentLocation);
         return false;
     }
-
     private boolean tryLeft(int x, int y){
         moveLeft(currentLocation);
         if (check()) {
@@ -613,7 +640,6 @@ public class Villager {
         moveRight(currentLocation);
         return false;
     }
-
     private boolean tryRight(int x, int y){
         moveRight(currentLocation);
         if (check()) {
@@ -623,7 +649,6 @@ public class Villager {
         moveLeft(currentLocation);
         return false;
     }
-
     private boolean tryUpLeft(int x, int y){
         moveUpLeft(currentLocation);
         if (check()) {
@@ -633,7 +658,6 @@ public class Villager {
         moveDownRight(currentLocation);
         return false;
     }
-
     private boolean tryUpRight(int x, int y){
         moveUpRight(currentLocation);
         if (check()) {
@@ -643,7 +667,6 @@ public class Villager {
         moveDownLeft(currentLocation);
         return false;
     }
-
     private boolean tryDownLeft(int x, int y){
         moveDownLeft(currentLocation);
         if (check()) {
@@ -653,7 +676,6 @@ public class Villager {
         moveUpRight(currentLocation);
         return false;
     }
-
     private boolean tryDownRight(int x, int y){
         moveDownRight(currentLocation);
         if (check()) {
@@ -672,6 +694,8 @@ public class Villager {
             g2d.setColor(color);
             g2d.rotate(toRadians(vector), currentLocation.x, currentLocation.y);
             g2d.fillOval(currentLocation.x - size / 2, currentLocation.y - size / 2, size, size);
+            g2d.setColor(Colors.VILLAGER);
+            g2d.fillRect(currentLocation.x, currentLocation.y, 2, 2);
             // Weapon
             primeWeapon.draw(g, currentLocation, size, vector);
             // Shield

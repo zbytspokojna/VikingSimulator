@@ -80,14 +80,14 @@ public class Vikings {
         for (SquadVikings i : squads)
             i.estimateState();
 
-        int lost = 0, retreated = 0, looted = 0, defeated = 0;
+        int lost = 0, retreated = 0, looted = 0, defeated = 0, canLoot = 0;
 
         // Losing statement
         for (SquadVikings i : squads) {
             if (i.getState() == States.DEAD || i.getState() == States.LOSS) lost ++;
             if (i.getState() == States.RETREAT) retreated++;
         }
-        // loss
+        // Loss
         if (lost == squads.size()) {
             state = States.LOSS;
             return;
@@ -95,26 +95,33 @@ public class Vikings {
 
         // Regruping or retreating
         if (retreated != 0 && lost + retreated == squads.size()){
-            int size = 0, alive = 0, inBoat = 0;
+            int size = 0, alive = 0, alive2 = 0, inBoat = 0;
             for (SquadVikings i : squads) {
                 size += i.getSize();
                 if (i.getState() == States.RETREAT)
                     for (Viking j : i.getVikings()) {
-                        if (j.getState() != States.DEAD) alive++;
-                        if (j.getInBoat()) inBoat++;
+                        if (j.getState() != States.DEAD)
+                            alive++;
+                        if (j.getInBoat())
+                            inBoat++;
                     }
             }
+            for (SquadVillagers i : enemies)
+                    for (Villager j : i.getVillagers())
+                        if (j.getState() != States.DEAD)
+                            alive2++;
+
             if (inBoat == alive)
-                // loss
-                if (alive < size/2) {
-                    state = States.LOSS;
-                    return;
-                }
-                // reattack
-                else {
+                // Reattack
+                if (alive >= size/2 || alive2 <= alive) {
                     state = States.FIGHT;
                     for (SquadVikings i : squads)
                         i.setReAttack();
+                    return;
+                }
+                // Loss
+                else {
+                    state = States.LOSS;
                     return;
                 }
         }
@@ -127,19 +134,29 @@ public class Vikings {
             if (i.getState() == States.DEAD || i.getState() == States.LOSS)
                 defeated ++;
 
-        // win
+        // Win
         if (looted == village.getBuildings().size()) {
             state = States.WIN;
             return;
         }
-        // get the rest of the loot
+        // Get the rest of the loot
         if (defeated == enemies.size() && looted != village.getBuildings().size()) {
-            state = States.FIGHT;
             for (SquadVikings i : squads)
-                i.setReAttack();
-            return;
+                for (Viking j : i.getVikings())
+                    if (j.getLoot() < j.getMaxLoot() && j.getState() != States.DEAD)
+                        canLoot++;
+            if (canLoot > 0) {
+                state = States.FIGHT;
+                for (SquadVikings i : squads)
+                    i.setReAttack();
+                return;
+            }
+            else {
+                state = States.WIN;
+                return;
+            }
         }
-        // win
+        // Win
         if (defeated == enemies.size() && looted == village.getBuildings().size()) {
             state = States.WIN;
             return;

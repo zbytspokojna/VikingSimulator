@@ -231,7 +231,7 @@ public class Boat {
         return true;
     }
     private boolean checkM(){
-        double interval = 2.5;
+        double interval = 3;
         // Is in previous location
         if(currentLocation.x == previousLocation.x && currentLocation.y == previousLocation.y) return false;
         // Is outside the border

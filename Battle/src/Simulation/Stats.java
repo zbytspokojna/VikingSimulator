@@ -114,28 +114,28 @@ public class Stats {
     public void draw(Graphics g){
         g.setFont(new Font("TimesRoman", Font.BOLD, 25));
         g.setColor(Colors.VIKING);
-        g.drawString("VIKINGS", 1010 , 250);
+        g.drawString("VIKINGS", 1010 , 190);
         g.setColor(Colors.VILLAGER);
-        g.drawString("VILLAGERS", 1010, 600);
+        g.drawString("VILLAGERS", 1010, 410);
 
         g.setFont(new Font("TimesRoman", Font.PLAIN, 20));
         g.setColor(Colors.VIKING);
-        g.drawString("Health " + String.valueOf(this.vikingsHealth),1010, 290);
-        g.drawString("Alive " + String.valueOf(this.vikingsAlive),1010, 330);
-        g.drawString("Dead " + String.valueOf(this.vikingsDead),1010, 370);
-        g.drawString("Retreated " + String.valueOf(this.vikingsRetreated),1010, 410);
-        g.drawString("Loot " + String.valueOf(this.lootOnVikings),1010, 450);
+        g.drawString("Health " + String.valueOf(this.vikingsHealth),1010, 220);
+        g.drawString("Alive " + String.valueOf(this.vikingsAlive),1010, 250);
+        g.drawString("Dead " + String.valueOf(this.vikingsDead),1010, 280);
+        g.drawString("Retreated " + String.valueOf(this.vikingsRetreated),1010, 310);
+        g.drawString("Loot " + String.valueOf(this.lootOnVikings),1010, 340);
         g.setFont(new Font("TimesRoman", Font.BOLD, 25));
-        g.drawString(vikingsState, 1010, 500);
+        g.drawString(vikingsState, 1010, 370);
 
         g.setFont(new Font("TimesRoman", Font.PLAIN, 20));
         g.setColor(Colors.VILLAGER);
-        g.drawString("Health " + String.valueOf(this.villagersHealth),1010, 640);
-        g.drawString("Alive " + String.valueOf(this.villagersAlive),1010, 680);
-        g.drawString("Dead " + String.valueOf(this.villagersDead),1010, 720);
-        g.drawString("Retreated " + String.valueOf(this.villagersRetreated),1010, 760);
-        g.drawString("Loot " + String.valueOf(this.lootInVillage),1010, 800);
+        g.drawString("Health " + String.valueOf(this.villagersHealth),1010, 440);
+        g.drawString("Alive " + String.valueOf(this.villagersAlive),1010, 470);
+        g.drawString("Dead " + String.valueOf(this.villagersDead),1010, 500);
+        g.drawString("Retreated " + String.valueOf(this.villagersRetreated),1010, 530);
+        g.drawString("Loot " + String.valueOf(this.lootInVillage),1010, 560);
         g.setFont(new Font("TimesRoman", Font.BOLD, 25));
-        g.drawString(villagersState, 1010, 850);
+        g.drawString(villagersState, 1010, 590);
     }
 }
